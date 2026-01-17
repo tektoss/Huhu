@@ -268,7 +268,7 @@ export const fetchProductsByCategory = async (category: string) => {
 
 
   export const getUserData = async (userId: string) => {
-    const docRef = doc(db, "users", userId);
+    const docRef = doc(db, "vendors", userId);
     const docSnap = await getDoc(docRef);
     const data = docSnap.exists() ? docSnap.data() : null;
 

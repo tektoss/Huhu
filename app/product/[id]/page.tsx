@@ -55,8 +55,8 @@ export default function ProductPage() {
     || product?.vendor?.fullName
     || product?.vendor?.companyName
     || "Unknown User"
-  const vendorImage = product?.vendor?.image
-    || product?.vendor?.photoURL
+  const vendorImage = product?.vendor?.photoURL
+    || product?.vendor?.image
     || product?.vendor?.photoUrl
     || product?.vendor?.avatar
     || "/placeholder.svg?height=48&width=48"
@@ -139,6 +139,26 @@ export default function ProductPage() {
         
 
         setProduct(productData)
+
+        // Fetch vendor info from vendors collection
+        if (productData.vendor?.uid) {
+          try {
+            const vendorDocRef = doc(db, "vendors", productData.vendor.uid)
+            const vendorDocSnap = await getDoc(vendorDocRef)
+            if (vendorDocSnap.exists()) {
+              const vendorData = vendorDocSnap.data()
+              setProduct(prev => prev ? {
+                ...prev,
+                vendor: {
+                  ...prev.vendor,
+                  ...vendorData
+                }
+              } : null)
+            }
+          } catch (err) {
+            console.error("Error fetching vendor data:", err)
+          }
+        }
 
         // Set the main image to the first image in the array
         if (productData.images && productData.images.length > 0) {

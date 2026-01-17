@@ -254,7 +254,7 @@ export default function NewPostPage() {
         const productData = {
             id: productId,
             name: formData.name,
-            price: formData.price,
+            price: Number(formData.price),
             brand: finalBrand,
             condition: formData.condition,
             details: formData.description,

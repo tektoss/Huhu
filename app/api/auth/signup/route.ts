@@ -5,8 +5,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { email, password, firstName, lastName, phone: phoneNumber } = body;
 
-  if (!email || !password || !firstName || !lastName || !phoneNumber) {
-    return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
+  if (!email || !password) {
+    return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
   }
 
   try {
@@ -21,21 +21,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Format phone number to E.164
-    const getE164NumberFormat = (num: string) => {
-      let raw = num.trim();
-      if (raw.startsWith('0')) raw = raw.slice(1);
-      return '+233' + raw;
-    };
-
-    const formattedPhone = getE164NumberFormat(phoneNumber);
+    // Format phone number to E.164 (only if provided)
+    let formattedPhone: string | undefined;
+    if (phoneNumber) {
+      const getE164NumberFormat = (num: string) => {
+        let raw = num.trim();
+        if (raw.startsWith('0')) raw = raw.slice(1);
+        return '+233' + raw;
+      };
+      formattedPhone = getE164NumberFormat(phoneNumber);
+    }
 
     // Create user in Firebase Auth
     const userRecord = await adminAuth.createUser({
       email,
       password,
       displayName: `${firstName} ${lastName}`,
-      phoneNumber: formattedPhone,
+      ...(formattedPhone && { phoneNumber: formattedPhone }),
       emailVerified: false,
     });
 
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
       email,
       firstName,
       lastName,
-      phoneNumber,
+      ...(phoneNumber && { phoneNumber }),
       displayName: userRecord.displayName,
       emailVerified: false,
       photoURL: userRecord.photoURL || '',

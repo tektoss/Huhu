@@ -1,0 +1,34 @@
+# https://www.shops-huhu.com robots.txt
+
+User-agent: *
+Allow: /
+
+# Disallow private/auth pages
+Disallow: /api/
+Disallow: /signin
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /verify-email
+Disallow: /chat
+Disallow: /notifications
+Disallow: /wishlist
+Disallow: /new-post
+Disallow: /edit-post
+Disallow: /edit-product
+
+# Allow search engines to crawl important pages
+Allow: /
+Allow: /categories
+Allow: /jobs
+Allow: /properties
+Allow: /services
+Allow: /product/*
+Allow: /job/*
+Allow: /property/*
+Allow: /service/*
+Allow: /profile/*
+Allow: /search/*
+Allow: /category/*
+
+# Sitemap
+Sitemap: https://www.shops-huhu.com/sitemap.xml

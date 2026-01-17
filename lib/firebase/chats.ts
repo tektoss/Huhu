@@ -15,10 +15,15 @@ import {
 import { db } from "./firebase"
 
 interface messageDataType {
-  text: string,
-  timeStamp: any,
+  id?: string,
+  message: string,
   senderId: string,
+  createdAt: any,
+  image: null | string,
+  read: boolean,
 }
+
+export type MessageDataType = messageDataType
 
 export interface ChatMessage {
   chatId: string
@@ -39,8 +44,12 @@ export interface ChatMessage {
 
 export interface ChatListDataType {
   id?: string
+  chatId?: string
   timeStamp: any
   productName: string
+  productImage?: string
+  productPrice?: string | number
+  productId?: string
   message: {
     senderId: string,
     text: string,
@@ -139,9 +148,9 @@ export const sendMessage = async (
   productPrice: string | number
 ): Promise<void> => {
   try {
-    // Validate parameters
-    if (!chatId || !senderId || !text.trim() || !receiverId || !senderName || !productName || !receiverName || !productId || !productPrice) {
-      throw new Error("Missing required parameters for sending message")
+    // Validate required parameters
+    if (!chatId || !senderId || !text.trim() || !receiverId || !senderName || !productName || !receiverName) {
+      throw new Error(`Missing required parameters for sending message: chatId=${chatId}, senderId=${senderId}, text=${text.trim()}, receiverId=${receiverId}, senderName=${senderName}, productName=${productName}, receiverName=${receiverName}`)
     }
 
     if (senderId === receiverId) {
@@ -159,11 +168,14 @@ export const sendMessage = async (
 
       await updateDoc(chatRef, {
         message: {
-          text: text.trim(),
           senderId,
+          text: text.trim(),
         },
         unreadCount: newUnreadCount,
         timeStamp: serverTimestamp(),
+        productImage,
+        productPrice,
+        productId,
       });
 
       console.log("Updated chat with last message");
@@ -174,6 +186,9 @@ export const sendMessage = async (
         chatId,
         timeStamp: serverTimestamp(),
         productName,
+        productImage,
+        productPrice,
+        productId,
         message: {
           senderId,
           text: text.trim(),
@@ -199,52 +214,17 @@ export const sendMessage = async (
       await setDoc(doc(db, "chatList", chatId), newChatListData);
     }
 
-    const messagesRef = doc(db, "messages", chatId);
-    const messagesDoc = await getDoc(messagesRef);
+    // Add message to subcollection (like mobile app)
+    const messageData = {
+      message: text.trim(),
+      senderId,
+      createdAt: new Date(),
+      image: null,
+      read: false,
+    };
 
-    if (messagesDoc.exists()) {
-      const messagesData = messagesDoc.data() as ChatMessage
-      const newMessage = { text, timeStamp: Date.now(), senderId };
-      const messagesList = [ ...messagesData.messages, newMessage ];
-
-      await updateDoc(messagesRef, {
-        messages: messagesList
-      })
-
-      console.log("Updated chat with last message")
-
-    } else {
-      // creating new chatList
-      const newMessagesData = {
-        chatId,
-        participants: {
-          [senderId]:{
-            name: senderName,
-            senderAvatar,
-          },
-          [receiverId]:{
-            name: receiverName,
-            receiverAvatar,
-          }
-        },
-        productData:{
-          productId,
-          productPrice,
-          productName,
-          productImage,
-        },
-        messages: [
-          {
-            text, 
-            timeStamp: Date.now(),
-            senderId,
-          }
-        ]
-      }
-
-      console.log("new messages data", newMessagesData);
-      await setDoc(doc(db, "messages", chatId), newMessagesData);
-    }
+    await addDoc(collection(db, 'chats', chatId, 'messages'), messageData);
+    console.log("Message added to subcollection");
   } catch (error) {
     console.error("Error sending message:", error)
     throw new Error(`Failed to send message: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -324,41 +304,144 @@ export const subscribeToChatMessages = (chatId: string, callback: (messages: Cha
     return () => {}
   }
 
+  // Query messages subcollection ordered by createdAt
+  const messagesQuery = query(
+    collection(db, 'chats', chatId, 'messages'),
+    orderBy('createdAt', 'asc')
+  );
+
   return onSnapshot(
-    doc(db, "messages", chatId), 
-    (doc) => {
-      console.log("Current data: ", doc.data());
-      const messageData = doc.data() as ChatMessage;
-      callback(messageData);
+    messagesQuery, 
+    (snapshot) => {
+      const messagesList = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      }));
+      console.log("Current messages: ", messagesList);
+      
+      const chatMessage: ChatMessage = {
+        messages: messagesList as any
+      };
+      callback(chatMessage);
     },
     (error) => {
-      console.error("Error in user chats subscription:", error)
+      console.error("Error in messages subscription:", error)
       callback(null)
     },
   );
-
-  
 }
 
 // Helper to normalize legacy chat data to current format
-const normalizeChatData = (doc: any, docId: string): ChatListDataType | null => {
+const normalizeChatData = (
+  doc: any,
+  docId: string,
+  vendorCache?: Map<string, any>
+): ChatListDataType | null => {
   const data = doc;
   
   // Check if this is legacy format (participants is an array)
   if (Array.isArray(data.participants)) {
     // Legacy format from mobile app
     const [user1, user2] = data.participants;
+    
+    // Try to get names from various possible locations in the document
+    const getParticipantName = (userId: string, index: number) => {
+      // Check vendor cache first (fetched from vendors collection) - this has displayName
+      if (vendorCache && vendorCache.has(userId)) {
+        const vendorData = vendorCache.get(userId);
+        return vendorData.displayName || vendorData.name || "User";
+      }
+      // Check if there's a participants map/object with names
+      if (data.participants && !Array.isArray(data.participants) && data.participants[userId]?.name) {
+        return data.participants[userId].name;
+      }
+      // Check if there's a participantNames object
+      if (data.participantNames && data.participantNames[userId]) {
+        return data.participantNames[userId];
+      }
+      // Check in a stored participants data structure
+      if (data.participantsData && data.participantsData[userId]?.name) {
+        return data.participantsData[userId].name;
+      }
+      // Check lastMessage for sender/receiver names
+      if (data.lastMessage) {
+        if (userId === data.lastMessage.senderId && data.lastMessage.senderName) {
+          return data.lastMessage.senderName;
+        }
+        if (userId === data.lastMessage.receiverId && data.lastMessage.receiverName) {
+          return data.lastMessage.receiverName;
+        }
+      }
+      // Check messages array if it exists
+      if (Array.isArray(data.messages) && data.messages.length > 0) {
+        const msg = data.messages[data.messages.length - 1]; // Get last message
+        if (msg.participants && msg.participants[userId]?.name) {
+          return msg.participants[userId].name;
+        }
+      }
+      return "User";
+    };
+    
+    const getParticipantImage = (userId: string) => {
+      // Check vendor cache first for profile image (matches mobile: photoURL)
+      if (vendorCache && vendorCache.has(userId)) {
+        const vendorData = vendorCache.get(userId);
+        return vendorData.photoURL || vendorData.profileImage || vendorData.image || "";
+      }
+      // Check if there's a participants map with image
+      if (data.participants && !Array.isArray(data.participants) && data.participants[userId]?.image) {
+        return data.participants[userId].image;
+      }
+      // Check if there's a participantImages object
+      if (data.participantImages && data.participantImages[userId]) {
+        return data.participantImages[userId];
+      }
+      // Check in stored participants data
+      if (data.participantsData && data.participantsData[userId]?.image) {
+        return data.participantsData[userId].image;
+      }
+      // Check lastMessage for avatars
+      if (data.lastMessage) {
+        if (userId === data.lastMessage.senderId && data.lastMessage.senderAvatar) {
+          return data.lastMessage.senderAvatar;
+        }
+        if (userId === data.lastMessage.receiverId && data.lastMessage.receiverAvatar) {
+          return data.lastMessage.receiverAvatar;
+        }
+      }
+      // Check messages array
+      if (Array.isArray(data.messages) && data.messages.length > 0) {
+        const msg = data.messages[data.messages.length - 1];
+        if (msg.participants && msg.participants[userId]?.image) {
+          return msg.participants[userId].image;
+        }
+      }
+      return "";
+    };
+    
     return {
       id: docId,
+      chatId: docId,
       timeStamp: data.lastMessage?.createdAt || data.createdAt || null,
       productName: data.productName || "Chat",
+      productId: data.productId || "",
+      productImage: data.productImage || "",
+      productPrice: data.productPrice || 0,
       message: {
         senderId: data.lastMessage?.senderId || "",
         text: data.lastMessage?.message || data.lastMessage?.text || "",
       },
       participants: {
-        [user1]: { name: "User", id: user1, image: "" },
-        [user2]: { name: "User", id: user2, image: "" },
+        [user1]: { 
+          name: getParticipantName(user1, 0), 
+          id: user1, 
+          image: getParticipantImage(user1)
+        },
+        [user2]: { 
+          name: getParticipantName(user2, 1), 
+          id: user2, 
+          image: getParticipantImage(user2)
+        },
       },
       unreadCount: {
         [user1]: data.lastMessage?.read ? 0 : (data.lastMessage?.senderId === user2 ? 1 : 0),
@@ -368,16 +451,31 @@ const normalizeChatData = (doc: any, docId: string): ChatListDataType | null => 
   }
   
   // Current web format (participants is a map)
-  if (data.participants && typeof data.participants === 'object') {
+  if (data.participants && typeof data.participants === 'object' && !Array.isArray(data.participants)) {
+    // Extract participant info from the map
+    const normalizedParticipants: Record<string, any> = {};
+    for (const [userId, participantData] of Object.entries(data.participants)) {
+      const pData = participantData as any;
+      normalizedParticipants[userId] = {
+        id: userId,
+        name: pData?.name || pData?.displayName || "User",
+        image: pData?.senderAvatar || pData?.receiverAvatar || pData?.photoURL || "",
+      };
+    }
+    
     return {
       id: docId,
+      chatId: data.chatId || docId,
       timeStamp: data.timeStamp || data.lastMessage?.createdAt || null,
       productName: data.productName || "Chat",
+      productId: data.productId || "",
+      productImage: data.productImage || "",
+      productPrice: data.productPrice || 0,
       message: data.message || {
         senderId: data.lastMessage?.senderId || "",
         text: data.lastMessage?.message || data.lastMessage?.text || "",
       },
-      participants: data.participants,
+      participants: normalizedParticipants,
       unreadCount: data.unreadCount || {},
     };
   }
@@ -392,12 +490,46 @@ export const subscribeToUserChats = (userId: string, callback: (chats: ChatListD
     return () => {}
   }
   
-  const allChats: ChatListDataType[] = [];
+  // Store raw snapshot data to re-normalize when vendors load
+  let chatListDocs: { data: any, id: string }[] = [];
+  let legacyDocs: { data: any, id: string }[] = [];
   let chatListLoaded = false;
   let legacyChatsLoaded = false;
-  let legacyChatListLoaded = false;
+  let vendorsLoaded = false;
   
-  const mergeAndCallback = () => {
+  // Cache for vendor data (userId -> vendor doc)
+  const vendorCache = new Map<string, any>();
+  
+  const normalizeAndCallback = () => {
+    // Only callback when all data is loaded
+    if (!chatListLoaded || !legacyChatsLoaded || !vendorsLoaded) {
+      return;
+    }
+    
+    const allChats: ChatListDataType[] = [];
+    
+    // Normalize chatList docs
+    chatListDocs.forEach(({ data, id }) => {
+      const normalized = normalizeChatData(data, id, vendorCache);
+      if (normalized && (
+        Array.isArray(data.participants) 
+          ? data.participants.includes(userId)
+          : normalized.participants[userId]
+      )) {
+        allChats.push(normalized);
+      }
+    });
+    
+    // Normalize legacy docs
+    legacyDocs.forEach(({ data, id }) => {
+      if (Array.isArray(data.participants) && data.participants.includes(userId)) {
+        const normalized = normalizeChatData(data, id, vendorCache);
+        if (normalized && !allChats.find(c => c.id === normalized.id)) {
+          allChats.push(normalized);
+        }
+      }
+    });
+    
     // Sort all chats by timestamp
     const sortedChats = [...allChats].sort((a, b) => {
       const aTime = a.timeStamp?.toDate?.() || a.timeStamp || new Date(0);
@@ -413,35 +545,40 @@ export const subscribeToUserChats = (userId: string, callback: (chats: ChatListD
     callback(uniqueChats);
   };
 
+  // Pre-fetch vendor data for common participants
+  const preloadVendors = async () => {
+    try {
+      // Query all vendors to populate cache
+      const vendorsSnapshot = await getDocs(collection(db, "vendors"));
+      vendorsSnapshot.docs.forEach((doc) => {
+        vendorCache.set(doc.id, doc.data());
+      });
+      vendorsLoaded = true;
+      normalizeAndCallback();
+    } catch (error) {
+      console.error("Error preloading vendors:", error);
+      vendorsLoaded = true;
+      normalizeAndCallback();
+    }
+  };
+
+  // Start preloading vendors
+  preloadVendors();
+
   // Subscribe to new chatList collection
   const chatListQuery = query(collection(db, "chatList"), orderBy("timeStamp", "desc"));
   const unsubscribeChatList = onSnapshot(
     chatListQuery,
     (snapshot) => {
-      // Remove old chatList entries
-      const chatListIds = new Set(snapshot.docs.map(doc => doc.id));
-      const filtered = allChats.filter(c => !chatListIds.has(c.id) || c.id?.includes('-'));
-      allChats.length = 0;
-      allChats.push(...filtered);
-      
-      snapshot.docs.forEach((doc) => {
-        const normalized = normalizeChatData(doc.data(), doc.id);
-        if (normalized && (
-          Array.isArray(doc.data().participants) 
-            ? doc.data().participants.includes(userId)
-            : normalized.participants[userId]
-        )) {
-          allChats.push(normalized);
-        }
-      });
-      
+      // Store raw docs for later normalization
+      chatListDocs = snapshot.docs.map(doc => ({ data: doc.data(), id: doc.id }));
       chatListLoaded = true;
-      if (chatListLoaded) mergeAndCallback();
+      normalizeAndCallback();
     },
     (error) => {
       console.error("Error in chatList subscription:", error);
       chatListLoaded = true;
-      mergeAndCallback();
+      normalizeAndCallback();
     }
   );
 
@@ -450,24 +587,15 @@ export const subscribeToUserChats = (userId: string, callback: (chats: ChatListD
   const unsubscribeLegacyChats = onSnapshot(
     legacyChatsQuery,
     (snapshot) => {
-      snapshot.docs.forEach((doc) => {
-        const data = doc.data();
-        // Check if user is a participant (array format)
-        if (Array.isArray(data.participants) && data.participants.includes(userId)) {
-          const normalized = normalizeChatData(data, doc.id);
-          if (normalized && !allChats.find(c => c.id === normalized.id)) {
-            allChats.push(normalized);
-          }
-        }
-      });
-      
+      // Store raw docs for later normalization
+      legacyDocs = snapshot.docs.map(doc => ({ data: doc.data(), id: doc.id }));
       legacyChatsLoaded = true;
-      if (chatListLoaded) mergeAndCallback();
+      normalizeAndCallback();
     },
     (error) => {
       console.error("Error in legacy chats subscription:", error);
       legacyChatsLoaded = true;
-      mergeAndCallback();
+      normalizeAndCallback();
     }
   );
 

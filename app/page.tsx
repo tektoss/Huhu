@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowUp, Scale } from "lucide-react"
 import ProductCard from "@/components/product-card"
 import NavBar from "@/components/nav-bar"
-import { Smartphone, Car, Shirt, HomeIcon, Sofa, Dumbbell, Gamepad2, BookOpen, Briefcase, Wrench } from "lucide-react"
+import { Smartphone, Car, Shirt, HomeIcon, Sofa, Dumbbell, Gamepad2, BookOpen, Briefcase, Wrench, Key } from "lucide-react"
 import SoapDispenser from '@/components/icons/soap-dispenser-droplet.svg';
 import { useProducts } from "@/hooks/use-products"
 import { useAuthUser } from "@/lib/auth/hooks/useAuthUser"
@@ -73,6 +73,9 @@ export default function Home() {
             </Link>
             <Link href="/services" className="px-6 py-3 text-white bg-green-600 rounded-md hover:bg-green-700">
               Hire Services
+            </Link>
+            <Link href="/properties" className="px-6 py-3 text-white bg-amber-600 rounded-md hover:bg-amber-700">
+              Lease
             </Link>
           </div>
         </div>
@@ -319,17 +322,17 @@ export default function Home() {
               <h3 className="mb-4 text-lg font-bold">Quick Links</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="/about" className="hover:text-white">
                     About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="/contact" className="hover:text-white">
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="/faq" className="hover:text-white">
                     FAQ
                   </Link>
                 </li>

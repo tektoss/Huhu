@@ -23,7 +23,6 @@ export default function SignUpForm() {
     const [lastName, setLastName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const [phone, setPhone] = useState("")
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState("")
     const [showVerificationMessage, setShowVerificationMessage] = useState(false)
@@ -66,7 +65,7 @@ const handleGoogleSignIn = async () => {
       e.preventDefault();
       setLoadingSignup(true);
 
-      const payload = {firstName, lastName, phone, email, password};
+      const payload = {firstName, lastName, email, password};
       
       try {
         const res = await fetch('/api/auth/signup', {
@@ -167,24 +166,6 @@ const handleGoogleSignIn = async () => {
               />
             </div>
             
-            <div>
-              <label htmlFor="phone" className="block mb-1 text-sm font-medium text-gray-700">
-                Phone Number
-              </label>  
-              <div className="flex items-center border rounded-md overflow-hidden">
-              <span className="p-3 h-full bg-gray-100 text-gray-600 font-medium">+233</span>
-                <input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter your phone number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="flex-1 p-2 outline-none"
-                  maxLength={10}
-                />
-              </div>
-            </div>
-
             <div>
               <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-700">
                 Password

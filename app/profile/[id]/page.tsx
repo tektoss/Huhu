@@ -208,9 +208,6 @@ export default function ProfilePage() {
     if(!editFormData?.displayName){
       newErrors.displayName = "Name is required"
     }
-    if(editFormData?.phone && editFormData?.phone?.length !== 10){
-      newErrors.phone = "Phone number must be 10 digits","error"
-    }
     if(!editFormData?.location?.region){
       newErrors.region = "Region is required"
     }
@@ -241,7 +238,7 @@ export default function ProfilePage() {
 
         console.log("edited data", finalFormData);
 
-        const userRef = doc(db, "users", id);
+        const userRef = doc(db, "vendors", id);
         
         // Use setDoc with merge to create doc if it doesn't exist
         await setDoc(userRef, finalFormData, { merge: true });
@@ -309,16 +306,17 @@ export default function ProfilePage() {
                 <div className="flex-1 text-center md:text-left">
                   <div className="flex flex-col items-center justify-between md:flex-row">
                     <h1 className="mb-2 text-2xl font-bold">{formData?.displayName}</h1>
-                    <button
-                      onClick={() => setShowEditModal(true)}
-                      className="flex items-center mb-3 px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Edit Profile
-                    </button>
+                    {user?.uid === id && (
+                      <button
+                        onClick={() => setShowEditModal(true)}
+                        className="flex items-center mb-3 px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </button>
+                    )}
                   </div>
                   {locationText && <p className="text-gray-600">{locationText}</p>}
-                  {hasEmail && <p className="text-gray-600">{emailDisplay}</p>}
                   {hasPhone && <p className="text-gray-600">{phoneDisplay}</p>}
                   {!hasContactDetails && (
                     <p className="text-sm text-gray-500 italic">Vendor has not shared contact details yet.</p>
@@ -347,11 +345,12 @@ export default function ProfilePage() {
             </div>
 
             {/* Logout Button */}
-            <div className="mb-6 text-right">
-              <button
-                onClick={handleLogout}
-                className="flex items-center px-4 py-2 ml-auto text-sm text-red-600 border border-red-200 rounded-md hover:bg-red-50"
-              >
+            {user?.uid === id && (
+              <div className="mb-6 text-right">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center px-4 py-2 ml-auto text-sm text-red-600 border border-red-200 rounded-md hover:bg-red-50"
+                >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-4 h-4 mr-2"
@@ -368,13 +367,24 @@ export default function ProfilePage() {
                 </svg>
                 Log Out
               </button>
-            </div>
+              </div>
+            )}
 
             {/* Profile Tabs */}
+            {user?.uid === id && (
             <div className="mb-6 overflow-x-auto border-b">
               <div className="flex space-x-8">
-                <button onClick={() => setTab("products")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "products" ? "border-b-2 border-primary" : ""}`}>My Products</button>
-                <button onClick={() => setTab("jobs")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "jobs" ? "border-b-2 border-primary" : ""}`}>My Jobs</button>
+                <button onClick={() => setTab("products")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "products" ? "border-b-2 border-primary" : ""}`}>Products</button>
+                <button onClick={() => setTab("jobs")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "jobs" ? "border-b-2 border-primary" : ""}`}>Jobs</button>
+              </div>
+            </div>
+            )}
+
+            {/* Products and Jobs */}
+            <div className="mb-6 overflow-x-auto border-b">
+              <div className="flex space-x-8">
+                <button onClick={() => setTab("products")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "products" ? "border-b-2 border-primary" : ""}`}>Products</button>
+                <button onClick={() => setTab("jobs")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "jobs" ? "border-b-2 border-primary" : ""}`}>Jobs</button>
               </div>
             </div>
 

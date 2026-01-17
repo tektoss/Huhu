@@ -217,17 +217,17 @@ export default function JobListingPage() {
               <h3 className="mb-4 text-lg font-bold">Quick Links</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="/about" className="hover:text-white">
                     About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="/contact" className="hover:text-white">
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="/faq" className="hover:text-white">
                     FAQ
                   </Link>
                 </li>

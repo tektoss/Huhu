@@ -80,6 +80,10 @@ export default function ChatPage() {
       return;
     }
 
+    // Find and set the selected chat
+    const chat = chats.find(c => c.id === id)
+    setSelectedChat(chat || null)
+
     // Clean up previous messages subscription
     if (messagesUnsubscribeRef.current) {
       messagesUnsubscribeRef.current()
@@ -117,7 +121,7 @@ export default function ChatPage() {
 
 
   const groupedMessages = messages?.messages.reduce((groups: any, message) => {
-    const date = new Date(message.timeStamp)
+    const date = message.createdAt?.toDate ? message.createdAt.toDate() : new Date(message.createdAt)
     const dateKey = format(date, "yyyy-MM-dd")
     if (!groups[dateKey]) groups[dateKey] = []
     groups[dateKey].push(message)
@@ -129,16 +133,15 @@ export default function ChatPage() {
     e.preventDefault()
 
     const messageText = newMessage.trim();
-    if (!messageText || !messages || !user) {
+    if (!messageText || !selectedChat || !user) {
       return;
     }
 
     try {
       setSendingMessage(true);
 
-      // Determine receiver ID
-      // const receiverId = selectedChat.buyerId === user.uid ? selectedChat.sellerId : selectedChat.buyerId
-      const receiverId = getOtherUserId(messages, user.uid);
+      // Get receiver ID from selected chat participants
+      const receiverId = Object.keys(selectedChat.participants || {}).find(id => id !== user.uid);
 
       if(!receiverId){
         return;
@@ -146,30 +149,27 @@ export default function ChatPage() {
 
       // Get user display name
       const displayName = user.displayName || "Anonymous"
-
-      // console.log("Sending message to chat:", selectedChat.id)
+      const receiverInfo = selectedChat.participants?.[receiverId];
 
       await sendMessage(
-        messages.chatId,
+        selectedChat.id || chatIdFromUrl || "",
         user.uid,
         displayName,
         newMessage,
         receiverId,
-        messages.participants[user.uid].image,
-        messages.productData.productName,
-        messages.participants[receiverId].name,
-        messages.participants[receiverId].image,
-        messages.productData.productId,
-        messages.productData.productImage, 
-        messages.productData.productPrice, 
+        selectedChat.participants?.[user.uid]?.image || "",
+        selectedChat.productName || "Product",
+        receiverInfo?.name || "User",
+        receiverInfo?.image || "",
+        selectedChat.productId || "",
+        selectedChat.productImage || "",
+        selectedChat.productPrice || 0,
       )
-
 
       setNewMessage("")
       console.log("Message sent successfully")
     } catch (error) {
       console.error("Error sending message:", error)
-      // alert(`Failed to send message: ${error instanceof Error ? error.message : "Unknown error"}`)
       showToast("Failed to send message","error");
     } finally {
       setSendingMessage(false)
@@ -177,8 +177,8 @@ export default function ChatPage() {
   }
 
   const getOtherUserInfo = (chat: ChatMessage | ChatListDataType | null) => {
-    if (!user) return { name: "Unknown", avatar: "/user_placeholder.png" }
-    if (!chat) return { name: "Unknown", avatar: "/user_placeholder.png" }
+    if (!user) return { name: "Unknown", avatar: "/user_placeholder.png", id: "" }
+    if (!chat) return { name: "Unknown", avatar: "/user_placeholder.png", id: "" }
     
     const participantIds = Object.keys(chat.participants);
     const otherUserId = participantIds.find(id => id !== user.uid);
@@ -187,10 +187,11 @@ export default function ChatPage() {
       return {
         name: chat.participants[otherUserId].name || "Unknown User",
         avatar: chat.participants[otherUserId].image || "/user_placeholder.png",
+        id: otherUserId,
       }
     }
     
-    return { name: "Unknown User", avatar: "/user_placeholder.png" }
+    return { name: "Unknown User", avatar: "/user_placeholder.png", id: "" }
   }
 
   const filteredChats = chats.filter((chat) => {
@@ -264,16 +265,13 @@ export default function ChatPage() {
       ) : (
         filteredChats.map((chat) => {
           const otherUser = getOtherUserInfo(chat)
-          console.log("other user name", otherUser.name);
-          console.log("messages data", chat);
-          
           const unreadCount = user ? chat.unreadCount[user.uid] || 0 : 0
 
           return (
             <div
               key={chat.id}
               className={`flex items-center p-4 cursor-pointer hover:bg-gray-50 ${
-                messages?.chatId === chat.id ? "bg-blue-50 border-r-4 border-blue-500" : ""
+                selectedChat?.id === chat.id ? "bg-blue-50 border-r-4 border-blue-500" : ""
               }`}
               onClick={() => { if(chat.id) handleChatSelect(chat.id)}}
             >
@@ -293,7 +291,13 @@ export default function ChatPage() {
                 )} */}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 truncate">{otherUser.name}</h3>
+                <Link 
+                  href={`/profile/${otherUser.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-medium text-gray-900 truncate hover:text-blue-600 hover:underline block"
+                >
+                  {otherUser.name}
+                </Link>
                 <p className="text-sm text-blue-600 truncate font-medium">{chat.productName}</p>
                 <p className="text-sm text-gray-500 truncate">{chat.message.senderId === user.uid ? `You: ${chat.message.text}` : chat.message.text}</p>
               </div>
@@ -318,43 +322,52 @@ export default function ChatPage() {
         <div className="border-b bg-white">
           {/* Product Info */}
           <div className="flex items-center p-4 bg-gray-50 border-b">
-            <div className="relative w-12 h-12 mr-3 overflow-hidden rounded-lg">
-              <Image
-                src={messages.productData.productImage || "/placeholder.svg?height=48&width=48"}
-                alt={messages.productData.productName}
-                fill
-                className="object-cover"
-              />
-            </div>
+            {selectedChat?.productImage && (
+              <div className="relative w-12 h-12 mr-3 overflow-hidden rounded-lg">
+                <Image
+                  src={selectedChat.productImage || "/placeholder.svg?height=48&width=48"}
+                  alt={selectedChat.productName || "Product"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
             <div className="flex-1">
-              <h3 className="font-medium text-gray-900">{messages.productData.productName}</h3>
-              <p className="text-lg font-bold text-green-600">GH₵{Number(messages.productData.productPrice).toFixed(2)}</p>
+              <h3 className="font-medium text-gray-900">{selectedChat?.productName || "Product"}</h3>
+              {selectedChat?.productPrice && (
+                <p className="text-lg font-bold text-green-600">GH₵{Number(selectedChat.productPrice).toFixed(2)}</p>
+              )}
             </div>
-            <Link
-              href={`/product/${messages?.productData?.productId}`}
-              className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
-            >
-              View Product
-            </Link>
+            {selectedChat?.productId && (
+              <Link
+                href={`/product/${selectedChat.productId}`}
+                className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
+              >
+                View Product
+              </Link>
+            )}
           </div>
 
           {/* Chat Partner */}
           <div className="flex items-center p-4">
             <div className="relative w-8 h-8 mr-3 overflow-hidden rounded-full">
               <Image
-                src={getOtherUserInfo(messages).avatar || "/user_placeholder.png"}
-                alt={'hello word'}
+                src={getOtherUserInfo(selectedChat).avatar || "/user_placeholder.png"}
+                alt={'user avatar'}
                 fill
                 className="object-cover"
               />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900">
-                {getOtherUserInfo(messages).name}
-              </h3>
+              <Link 
+                href={`/profile/${getOtherUserInfo(selectedChat).id}`}
+                className="font-medium text-gray-900 hover:text-blue-600 hover:underline"
+              >
+                {getOtherUserInfo(selectedChat).name}
+              </Link>
               <p className="text-xs text-gray-500">
                 Chat about: 
-                {messages.productData.productName}
+                {selectedChat?.productName}
                 </p>
             </div>
           </div>
@@ -390,7 +403,7 @@ export default function ChatPage() {
                       const isMe = message.senderId === user.uid
                       return (
                         <div
-                          key={message.id || message.timeStamp}
+                          key={message.id || message.createdAt}
                           className={`flex mb-2 ${isMe ? "justify-end" : "justify-start"}`}
                         >
                           <div
@@ -400,11 +413,11 @@ export default function ChatPage() {
                                 : "bg-white text-gray-800 rounded-bl-none shadow-md"
                             }`}
                           >
-                            <p className="break-words">{message.text}</p>
+                            <p className="break-words">{message.message}</p>
                             <div className="flex items-center justify-between mt-1">
                               <p className={`text-xs ${isMe ? "text-white" : "text-gray-500"}`}>
-                                {message.timeStamp
-                                  ? new Date(message.timeStamp).toLocaleTimeString([], {
+                                {message.createdAt
+                                  ? new Date(message.createdAt?.toDate ? message.createdAt.toDate() : message.createdAt).toLocaleTimeString([], {
                                       hour: "2-digit",
                                       minute: "2-digit",
                                     })
@@ -433,7 +446,7 @@ export default function ChatPage() {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={`Message about ${messages.productData.productName}...`}
+              placeholder={`Message about ${selectedChat?.productName || 'product'}...`}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={sendingMessage}
             />
