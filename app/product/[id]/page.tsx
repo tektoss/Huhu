@@ -45,11 +45,51 @@ export default function ProductPage() {
   const [liked, setLiked] = useState(false)
   const [message, setMessage] = useState("")
   const dispatch = useAppDispatch()
-  const [isLiking, setIsLiking] = useState(false);
-  const [messageError, setMessageError] = useState<string | null>(null);
-  const [loadingChat, setLoadingChat] = useState(false);
+  const [isLiking, setIsLiking] = useState(false)
+  const [messageError, setMessageError] = useState<string | null>(null)
+  const [loadingChat, setLoadingChat] = useState(false)
 
-  const isOwner = user && product && user.uid === product?.vendor?.uid
+  const vendorUid = product?.vendor?.uid
+  const vendorName = product?.vendor?.name
+    || product?.vendor?.displayName
+    || product?.vendor?.fullName
+    || product?.vendor?.companyName
+    || "Unknown User"
+  const vendorImage = product?.vendor?.image
+    || product?.vendor?.photoURL
+    || product?.vendor?.photoUrl
+    || product?.vendor?.avatar
+    || "/placeholder.svg?height=48&width=48"
+
+  const locationRegion = product?.location?.region
+    || product?.location?.state
+    || product?.location?.province
+  const locationSuburb = product?.location?.suburb
+    || product?.location?.town
+    || product?.location?.city
+  const locationCountry = product?.location?.country
+  const locationCoordinates = product?.location?.coordinates
+  const locationFallback = typeof product?.location === "string" ? product?.location : ""
+
+  const formattedLocation = (() => {
+    if (product?.propertyLocation) {
+      const segments = [product.propertyLocation, locationSuburb, locationRegion].filter(Boolean)
+      return segments.join(", ")
+    }
+
+    const parts = [locationRegion, locationSuburb].filter(Boolean)
+    if (parts.length) {
+      return parts.join(", ")
+    }
+
+    if (locationCountry) {
+      return locationCountry
+    }
+
+    return locationFallback
+  })()
+
+  const isOwner = Boolean(user && vendorUid && user.uid === vendorUid)
 
 
   const handleLike = async (e: React.MouseEvent) => {
@@ -78,7 +118,7 @@ export default function ProductPage() {
         setError(null)
 
         // Fetch the product by ID
-        const productDocRef = doc(db, "productListing", productId)
+        const productDocRef = doc(db, "products", productId)
         const productDocSnap = await getDoc(productDocRef)
 
         if (!productDocSnap.exists()) {
@@ -108,7 +148,7 @@ export default function ProductPage() {
         // Fetch similar products from the same category
         if (productData.category) {
           const similarProductsQuery = query(
-            collection(db, "productListing"),
+            collection(db, "products"),
             where("category", "==", productData.category),
             where("id", "!=", productId),
             limit(6),
@@ -157,13 +197,13 @@ export default function ProductPage() {
       return
     }
 
-    if (!product.vendor?.uid) {
+    if (!vendorUid) {
       showToast("Unable to find product owner information", "error");
       return
     }
 
     // Prevent users from messaging themselves
-    if (user.uid === product.vendor?.uid) {
+    if (user.uid === vendorUid) {
       showToast("You cannot send message to yourself", "error");
       return
     }
@@ -172,17 +212,17 @@ export default function ProductPage() {
       setIsSendingMessage(true);
 
       console.log("chatList data", {
-        vendorImage: product.vendor?.image || "",
-        vendorName: product.vendor?.name || "",
+        vendorImage,
+        vendorName,
         lastMessage: message,
         unreadMessageCount: [message],
         productName: product.name,
-        chatId: generateChatId(user.uid , product.vendor?.uid, productId),
+        chatId: generateChatId(user.uid , vendorUid, productId),
         timeStamp: serverTimestamp(),
       });
 
       console.log("messageList data", {
-        chatId: generateChatId(user.uid , product.vendor?.uid, productId),
+        chatId: generateChatId(user.uid , vendorUid, productId),
         productPrice: product.price,
         productId,
         message: { 
@@ -194,22 +234,22 @@ export default function ProductPage() {
       
       // send message to back end
       await sendMessage(
-        generateChatId(user.uid , product.vendor?.uid, productId),
+        generateChatId(user.uid , vendorUid, productId),
         user.uid,
         user?.displayName || "",
         message,
-        product.vendor.uid,
+        vendorUid,
         user?.photoURL || "",
         product.name,
-        product.vendor?.name,
-        product.vendor?.image,
+        vendorName,
+        vendorImage,
         productId,
         product?.images[0] || "",
         product.price 
       )
 
       showToast("Message sent successfully", "success");
-      router.push(`/chat?chatId=${generateChatId(user.uid , product.vendor?.uid, productId)}`)
+      router.push(`/chat?chatId=${generateChatId(user.uid , vendorUid, productId)}`)
       setMessage("");
       
     } catch(error){
@@ -222,9 +262,20 @@ export default function ProductPage() {
 
   const handleEdit = () => {
     if (product) {
-      // Navigate to edit page based on product category
-      const category = product.category?.toLowerCase() || "general"
-      router.push(`/edit-post/${product.id}/${category}`)
+      // Navigate to edit page based on itemType or fallback to category
+      let editPath = `/edit-post/${product.id}`
+      
+      if (product.itemType === "vehicles") {
+        editPath += "/vehicles"
+      } else if (product.itemType === "books") {
+        editPath += "/books"
+      } else if (product.category) {
+        editPath += `/${product.category.toLowerCase()}`
+      } else {
+        editPath += "/category"
+      }
+      
+      router.push(editPath)
     }
   }
 
@@ -357,7 +408,7 @@ export default function ProductPage() {
           {/* Product Info */}
           <div className="space-y-6">
             <h1 className="text-3xl font-bold">{product.name || product.title}</h1>
-            <p className="text-2xl font-bold">GH₵{product.price.toFixed(2)}</p>
+            <p className="text-2xl font-bold">GH₵{typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}</p>
 
             <div className="flex items-center space-x-2">
               <span className="px-2 py-1 text-xs text-white bg-green-500 rounded-full">
@@ -368,11 +419,26 @@ export default function ProductPage() {
               </span>
             </div>
 
-            {
-            product.propertyLocation ?  
-            (<p className="text-sm text-gray-600">{ product?.propertyLocation ? `Location: ${product?.propertyLocation}, ${product?.location?.suburb}, ${product?.location?.region}` : `Location: ${product?.propertyLocation}`}</p>) :
-            (<p className="text-sm text-gray-600">{ product?.location?.region ? `Location: ${product?.location?.region}, ${product?.location?.suburb}` : `Location: ${product.location}`}</p>)
-            }
+            {formattedLocation && (
+              <p className="text-sm text-gray-600">Location: {formattedLocation}</p>
+            )}
+
+            {locationCountry && formattedLocation && !formattedLocation.includes(locationCountry) && (
+              <p className="text-xs text-gray-500">Country: {locationCountry}</p>
+            )}
+
+            {(() => {
+              const lat = typeof locationCoordinates?.latitude === "number" ? locationCoordinates.latitude : parseFloat(locationCoordinates?.latitude ?? "")
+              const lon = typeof locationCoordinates?.longitude === "number" ? locationCoordinates.longitude : parseFloat(locationCoordinates?.longitude ?? "")
+
+              if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+
+              return (
+                <p className="text-xs text-gray-500">
+                  Coordinates: {lat.toFixed(4)}, {lon.toFixed(4)}
+                </p>
+              )
+            })()}
             
             {/* Car details */}
             {(product?.type || product?.vin || product?.mileage) && (<div>
@@ -419,15 +485,18 @@ export default function ProductPage() {
 
             {/* Vendor Details */}
             <div className="pt-4 border-t">
-              {/* <h3 className="mb-2 text-sm font-medium text-gray-500">VENDOR</h3> */}
-              <button onClick={() => router.push(`/profile/${product?.vendor?.uid}`)} className="flex items-center w-auto">
+              <button
+                type="button"
+                onClick={() => vendorUid && router.push(`/profile/${vendorUid}`)}
+                className="flex items-center w-auto disabled:cursor-not-allowed"
+                disabled={!vendorUid}
+              >
                 <div className="relative w-[50px] h-[50px] mr-3 overflow-hidden rounded-full">
-                  <Image src={product?.vendor?.image || "/placeholder.svg?height=48&width=48"} alt="Vendor" fill className="object-cover" />
+                  <Image src={vendorImage} alt="Vendor" fill className="object-cover" />
                 </div>
                 <div className="flex flex-col items-start">
                   <p className="font-medium">Vendor</p>
-                  <p className="text-lg hover:underline">{product?.vendor?.name || "Unknown User"}</p>
-                  {/* <p className="text-sm text-gray-600">Member since 2022</p> */}
+                  <p className="text-lg hover:underline">{vendorName}</p>
                 </div>
               </button>
             </div>

@@ -83,9 +83,16 @@ export default function NavBar() {
   return (
     <nav className="sticky top-0 z-10 bg-primary border-b shadow-sm">
       <div className="container flex items-center justify-between h-16 px-4 mx-auto">
-        <div className="flex items-center">
-          <Link href="/" className="text-xl font-bold text-white">
-            Sell Ghana
+        <div className="flex items-center mt-1">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/huhu-logo-light.svg"
+              alt="Huhu Marketplace"
+              width={100}
+              height={92}
+              className="h-18 w-20"
+            />
+            <span className="text-xl font-bold text-white hidden sm:inline">Huhu</span>
           </Link>
         </div>
 

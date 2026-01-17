@@ -310,38 +310,43 @@ export default function VehicleFormPage() {
         make: formData.make,
         model: formData.model,
         name: `${formData.year} ${formData.make === 'Other' ? '': formData.make} ${formData.model === 'Other' ? '': formData.model}`,
-        price: Number(formData.price),
-        condition: formData.condition,
-        description: formData.details,
-        images: uploadedImages,
-        imagesData,
+        mainCategory: "Cars & Trucks",
         category: "vehicles",
+        price: formData.price,
+        condition: formData.condition,
+        details: formData.details,
+        images: uploadedImages,
+        itemType: "vehicles",
         vin: formData.vin,
-        mileage: Number(formData.mileage),
+        mileage: formData.mileage,
         year: formData.year,
         location: {
-          region: formData.region,
-          suburb: formData.suburb,
-        },
-        promotion: {
-          isPromoted: false,
-          datePromoted:"",
-          dateOfExpiry:"",
-          promoType: ""
+          state: formData.region,
+          town: formData.suburb,
+          country: "Ghana",
+          coordinates: {
+            latitude: 0,
+            longitude: 0,
           },
+          locationIsSet: false,
+        },
+        isPromoted: false,
+        status: "active",
+        postedFrom: "Web",
         viewCount: [],
+        datePosted: serverTimestamp(),
+        lastEdited: serverTimestamp(),
         vendor:{
           uid: user?.uid || "",   
-          image: user?.photoURL || "",
-          name: user?.displayName || "", 
+          photoUrl: user?.photoURL || "",
+          displayName: user?.displayName || "", 
         },
-        createdAt: serverTimestamp(),
       }
 
       // In a real app, you would submit this data to your backend
       console.log("Vehicle listing submitted:", vehicleData)
 
-      await setDoc(doc(db, "productListing", productId), vehicleData);
+      await setDoc(doc(db, "products", productId), vehicleData);
 
       showToast("Post added successfully","success");
     

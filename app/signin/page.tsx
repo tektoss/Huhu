@@ -145,7 +145,7 @@ export default function SignInPage() {
       <div className="container px-4 py-8 mx-auto">
         <div className="max-w-md p-8 mx-auto bg-white rounded-lg shadow-sm">
           <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold">Sign In to Sell Ghana</h1>
+            <h1 className="text-2xl font-bold">Sign In to Huhu</h1>
             <p className="mt-2 text-gray-600">Welcome back! Please enter your details.</p>
           </div>
 

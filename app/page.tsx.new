@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowUp, Scale } from "lucide-react"
+import { ArrowUp, ArrowRight } from "lucide-react"
 import ProductCard from "@/components/product-card"
 import NavBar from "@/components/nav-bar"
 import { Smartphone, Car, Shirt, HomeIcon, Sofa, Dumbbell, Gamepad2, BookOpen, Briefcase, Wrench } from "lucide-react"
@@ -62,69 +62,113 @@ export default function Home() {
       >
         <div className="container flex flex-col items-center justify-center h-full px-4 mx-auto text-center">
           <h1 className="mb-4 text-4xl font-bold md:text-5xl">Discover Ghana's Marketplace</h1>
-          <p className="mb-2 text-lg text-gray-600">Buy and sell anything across Ghana</p>
-          <p className="mb-6 text-sm text-gray-500">Find jobs, hire services, discover properties & products</p>
-          <div className="flex flex-wrap justify-center gap-4 mb-6">
-            <button onClick={scrollToFeatured} className="px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light">
-              Shop Now
-            </button>
-            <Link href="/jobs" className="px-6 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700">
-              Find Jobs
-            </Link>
-            <Link href="/services" className="px-6 py-3 text-white bg-green-600 rounded-md hover:bg-green-700">
-              Hire Services
-            </Link>
-          </div>
+          <p className="mb-6 text-lg text-gray-600">Buy and sell anything across Ghana</p>
+          <button onClick={scrollToFeatured} className="px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light">
+            Shop Now
+          </button>
         </div>
       </section>
 
-      {/* Trending and New Products Sections */}
+      {/* Discover Section */}
       <section className="py-12 bg-white">
         <div className="container px-4 mx-auto">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Trending Products */}
-            <div 
-              className="bg-cover bg-center p-6 border border-slate-300 bg-gray-100 rounded-lg shadow-sm"
-              // style={{ backgroundImage: "url('/pattern_bg.jpg')" }}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-[0.3em]">Discover</p>
+              <h2 className="text-3xl font-bold mt-2">Everything in one place</h2>
+            </div>
+            <Link
+              href="/services"
+              className="hidden md:inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-black rounded-full hover:bg-gray-900"
             >
-              <h2 className="mb-4 text-2xl font-bold">Find Jobs</h2>
-              <p className="mb-6 text-gray-600">Find your next job opportunity right here today.</p>
-              <Link
-                href="/jobs"
-                className="inline-block px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light"
-              >
-                View Jobs
-              </Link>
+              Explore Services
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-[1.5fr_1fr]">
+            {/* Services Spotlight */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-500 to-sky-500 text-white">
+              <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url('/pattern_bg.jpg')" }} />
+              <div className="relative z-10 p-8 lg:p-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 text-sm font-medium bg-white/10 rounded-full">
+                  <Wrench className="w-4 h-4" />
+                  Top Rated Providers
+                </div>
+                <h3 className="mt-6 text-3xl font-bold lg:text-4xl">Book trusted services without the hassle</h3>
+                <p className="mt-4 text-white/90 max-w-lg">
+                  Electricians, cleaners, handymen, tech experts, and more. Compare profiles, chat instantly, and get help fast.
+                </p>
+                <div className="flex flex-wrap gap-3 mt-6">
+                  {["Home Repairs", "IT Support", "Events", "Beauty"].map((tag) => (
+                    <span key={tag} className="px-4 py-2 text-sm bg-white/15 rounded-full backdrop-blur border border-white/20">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-4 mt-8">
+                  <Link
+                    href="/services"
+                    className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold bg-white text-gray-900 rounded-full hover:bg-white/90"
+                  >
+                    Browse Services
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href="/new-post/services"
+                    className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold bg-white/0 text-white rounded-full border border-white/40 hover:bg-white/10"
+                  >
+                    Offer Your Service
+                  </Link>
+                </div>
+              </div>
             </div>
 
-            {/* New Products */}
-            <div 
-              className="bg-cover bg-center border border-slate-300 p-6 bg-gray-100 rounded-lg shadow-sm"
-              // style={{ backgroundImage: "url('/pattern_bg.jpg')" }}
-            >
-              <h2 className="mb-4 text-2xl font-bold">New Products</h2>
-              <p className="mb-6 text-gray-600">Be the first to discover fresh listings</p>
-              <Link
-                href="/category/new"
-                className="inline-block px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light"
-              >
-                View New Arrivals
-              </Link>
-            </div>
+            {/* Jobs and New Products */}
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-1">
+              <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-100 rounded-2xl">
+                    <Briefcase className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">Fresh roles daily</p>
+                    <h3 className="text-xl font-semibold">Find a job</h3>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm text-gray-600">
+                  Discover hiring companies looking for talent across Ghana.
+                </p>
+                <Link
+                  href="/jobs"
+                  className="inline-flex items-center gap-2 mt-6 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  View jobs
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
 
-            {/* Services */}
-            <div 
-              className="bg-cover bg-center border border-slate-300 p-6 bg-gray-100 rounded-lg shadow-sm"
-              // style={{ backgroundImage: "url('/pattern_bg.jpg')" }}
-            >
-              <h2 className="mb-4 text-2xl font-bold">Hire Services</h2>
-              <p className="mb-6 text-gray-600">Connect with skilled service providers in Ghana</p>
-              <Link
-                href="/services"
-                className="inline-block px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light"
-              >
-                Browse Services
-              </Link>
+              <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-orange-100 rounded-2xl">
+                    <Smartphone className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-orange-600">Daily uploads</p>
+                    <h3 className="text-xl font-semibold">Browse new items</h3>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm text-gray-600">
+                  See the latest listings from electronics to home goods.
+                </p>
+                <Link
+                  href="/category/new"
+                  className="inline-flex items-center gap-2 mt-6 text-sm font-semibold text-orange-600 hover:text-orange-700"
+                >
+                  Shop new arrivals
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -135,8 +179,8 @@ export default function Home() {
        {/* Brands Carousel */}
        {/* <section className="mb-[60px]" >
          <h2 className="px-4 mb-6 text-2xl font-bold">Top Brands</h2>
-        <div className={`slider w-full bg-black`} onMouseOver={() => setMouseOver(true)} onMouseOut={() => setMouseOver(false)}>
-          <div className={`${mouseOver ? "lg:slide-track-pause slide-track-pause-sm" : "lg:slide-track slide-track-sm"} md:slide-track`}>
+        <div className={`${mouseOver ? "lg:slide-track-pause slide-track-pause-sm" : "lg:slide-track slide-track-sm"} md:slide-track`} onMouseOver={() => setMouseOver(true)} onMouseOut={() => setMouseOver(false)}>
+          <div className={`slider w-full bg-black`}>
             <button className="slide" onClick={() => route.push("/category/nike")}>
               <img src="/icons8-nike.svg" className="h-[80%] lg:h-full hover:opacity-50" alt="nike" title="nike" />
             </button>
@@ -146,48 +190,48 @@ export default function Home() {
             <button className="slide" onClick={() => route.push("/category/adidas")}>
               <img src="https://seeklogo.com/images/A/adidas-logo-344EED0709-seeklogo.com.png" className="h-[70%] lg:h-full hover:opacity-50" alt="adidas" title="adidas" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/apple")}>
+            <button className="slide" onClick={() => route.push("/category/apple") }>
               <img src="https://cdn.iconscout.com/icon/free/png-256/free-apple-icon-download-in-svg-png-gif-file-formats--social-icons-color-pack-logos-432495.png?f=webp" className="h-[60%] lg:h-[80%] hover:opacity-50" alt="apple" title="apple" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/samsung")}>
+            <button className="slide" onClick={() => route.push("/category/samsung") }>
               <img src="https://cdn.iconscout.com/icon/free/png-256/free-samsung-logo-icon-download-in-svg-png-gif-file-formats--brand-mobile-logos-pack-icons-226432.png?f=webp" className="w-[100px] lg:w-[130px] hover:opacity-50" alt="samsung" title="samsung" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/640px-Microsoft_logo.svg.png" className="h-[65%] hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://images.seeklogo.com/logo-png/3/2/dell-logo-png_seeklogo-39672.png" className="h-full hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/HP_logo_630x630.png" className="h-full hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://images.seeklogo.com/logo-png/9/2/nintendo-logo-png_seeklogo-99658.png" className="w-[120px] hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://pngimg.com/d/sony_playstation_PNG17532.png" className="h-[70%] hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://www.freeiconspng.com/uploads/toyota-logo-png-25.png" className="w-[120px] hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://i.pinimg.com/736x/dc/aa/15/dcaa15b604a36e80564c7a5008d888be.jpg" className="h-[70%] hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://cdn4.iconfinder.com/data/icons/logos-brands-in-colors/660/kia-logo-new-512.png" className="w-[130px] hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="https://iconlogovector.com/uploads/images/2025/05/lg-683aaeb69b683-Hisense.webp" className="w-[110px] hover:opacity-50" alt="" />
             </button>
             <button className="slide">
               <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpje_CCUlUvR2DZK-0yj1ewCHk3GNIai2ojQ&s" className="w-[130px] hover:opacity-50" alt="" />
             </button>
-            <button className="slide" onClick={() => route.push("/category/nike")}>
+            <button className="slide" onClick={() => route.push("/category/nike") }>
               <img src="/icons8-nike.svg" className="h-[80%] lg:h-full hover:opacity-50" alt="nike" title="nike" />
             </button>
           </div>
         </div>
-      </section> */}
+      </section> */
 
 
 
@@ -246,7 +290,7 @@ export default function Home() {
               <span className="text-xs text-center font-semibold text-gray-600">Gaming</span>
             </Link>
 
-            <Link href="/properties" className="flex flex-col items-center">
+            <Link href="/category/property" className="flex flex-col items-center">
               <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
                 <HomeIcon className="w-8 h-8 text-gray-700" />
               </div>
@@ -259,6 +303,8 @@ export default function Home() {
               </div>
               <span className="text-xs text-center font-semibold text-gray-600">Books</span>
             </Link>
+
+            <div className="md:hidden" />
 
             <Link href="/jobs" className="flex flex-col items-center">
               <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">

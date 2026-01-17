@@ -177,22 +177,20 @@ export default function ChatPage() {
   }
 
   const getOtherUserInfo = (chat: ChatMessage | ChatListDataType | null) => {
-    if (!user) return { name: "Unknown", avatar: "/placeholder.svg?height=40&width=40" }
-    if (!chat) return { name: "Unknown", avatar: "/placeholder.svg?height=40&width=40" }
+    if (!user) return { name: "Unknown", avatar: "/user_placeholder.png" }
+    if (!chat) return { name: "Unknown", avatar: "/user_placeholder.png" }
     
-    if(Object.keys(chat.participants)[0] === user.uid){
-      const otherUserId = Object.keys(chat.participants)[1];
+    const participantIds = Object.keys(chat.participants);
+    const otherUserId = participantIds.find(id => id !== user.uid);
+    
+    if (otherUserId && chat.participants[otherUserId]) {
       return {
-        name: chat.participants[otherUserId].name || "Unknown Seller",
-        avatar: chat.participants[otherUserId].image || "/placeholder.svg?height=40&width=40",
-      }
-    } else {
-      const otherUserId = Object.keys(chat.participants)[0];
-      return {
-        name: chat.participants[otherUserId].name || "Unknown Seller",
-        avatar: chat.participants[otherUserId].image || "/placeholder.svg?height=40&width=40",
+        name: chat.participants[otherUserId].name || "Unknown User",
+        avatar: chat.participants[otherUserId].image || "/user_placeholder.png",
       }
     }
+    
+    return { name: "Unknown User", avatar: "/user_placeholder.png" }
   }
 
   const filteredChats = chats.filter((chat) => {
@@ -210,7 +208,7 @@ export default function ChatPage() {
         <nav className="sticky top-0 z-10 bg-white border-b shadow-sm">
           <div className="container flex items-center justify-between h-16 px-4 mx-auto">
             <Link href="/" className="text-xl font-bold">
-              Sell Ghana
+              Huhu
             </Link>
             <Link href="/signin" className="px-4 py-2 text-white bg-black rounded-md hover:bg-gray-800">
               Sign In
@@ -233,7 +231,7 @@ export default function ChatPage() {
       <nav className="sticky top-0 z-10 bg-white border-b shadow-sm">
         <div className="container flex items-center justify-between w-full h-16 px-4 mx-auto">
           <Link href="/" className="text-xl font-bold">
-            Sell Ghana
+            Huhu
           </Link>
         </div>
       </nav>
@@ -466,10 +464,10 @@ export default function ChatPage() {
   </div>
 
   <div className="h-[55px] lg:hidden w-full flex border-t border-slate-200">
-        <button onClick={() => {setShowMessage(false)}} className={`flex-1 h-full flex items-center justify-center ${showMessage ? 'text-slate-500' : 'bg-purple-300 text-white'}`}>
+        <button onClick={() => {setShowMessage(false)}} className={`flex-1 h-full flex items-center justify-center ${showMessage ? 'text-slate-500' : 'bg-purple-300 text-white'}`} aria-label="Show conversations list">
           <MenuIcon className=""></MenuIcon>
         </button>
-        <button onClick={() => {setShowMessage(true)}} className={`flex-1 h-full flex items-center justify-center ${showMessage ? 'bg-purple-300 text-white' : 'text-slate-500'}`}>
+        <button onClick={() => {setShowMessage(true)}} className={`flex-1 h-full flex items-center justify-center ${showMessage ? 'bg-purple-300 text-white' : 'text-slate-500'}`} aria-label="Show messages">
           <MessageCircle className=""></MessageCircle>
         </button>
       </div>

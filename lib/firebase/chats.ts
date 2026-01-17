@@ -340,6 +340,51 @@ export const subscribeToChatMessages = (chatId: string, callback: (messages: Cha
   
 }
 
+// Helper to normalize legacy chat data to current format
+const normalizeChatData = (doc: any, docId: string): ChatListDataType | null => {
+  const data = doc;
+  
+  // Check if this is legacy format (participants is an array)
+  if (Array.isArray(data.participants)) {
+    // Legacy format from mobile app
+    const [user1, user2] = data.participants;
+    return {
+      id: docId,
+      timeStamp: data.lastMessage?.createdAt || data.createdAt || null,
+      productName: data.productName || "Chat",
+      message: {
+        senderId: data.lastMessage?.senderId || "",
+        text: data.lastMessage?.message || data.lastMessage?.text || "",
+      },
+      participants: {
+        [user1]: { name: "User", id: user1, image: "" },
+        [user2]: { name: "User", id: user2, image: "" },
+      },
+      unreadCount: {
+        [user1]: data.lastMessage?.read ? 0 : (data.lastMessage?.senderId === user2 ? 1 : 0),
+        [user2]: data.lastMessage?.read ? 0 : (data.lastMessage?.senderId === user1 ? 1 : 0),
+      },
+    };
+  }
+  
+  // Current web format (participants is a map)
+  if (data.participants && typeof data.participants === 'object') {
+    return {
+      id: docId,
+      timeStamp: data.timeStamp || data.lastMessage?.createdAt || null,
+      productName: data.productName || "Chat",
+      message: data.message || {
+        senderId: data.lastMessage?.senderId || "",
+        text: data.lastMessage?.message || data.lastMessage?.text || "",
+      },
+      participants: data.participants,
+      unreadCount: data.unreadCount || {},
+    };
+  }
+  
+  return null;
+};
+
 // // Subscribe to user chats (only chat list, not messages)
 export const subscribeToUserChats = (userId: string, callback: (chats: ChatListDataType[]) => void): (() => void) => {
   if (!userId) {
@@ -347,27 +392,90 @@ export const subscribeToUserChats = (userId: string, callback: (chats: ChatListD
     return () => {}
   }
   
-  // Subscribe to all chats and filter on client side for simplicity
-  const chatsQuery = query(collection(db, "chatList"), orderBy("timeStamp", "desc"))
+  const allChats: ChatListDataType[] = [];
+  let chatListLoaded = false;
+  let legacyChatsLoaded = false;
+  let legacyChatListLoaded = false;
+  
+  const mergeAndCallback = () => {
+    // Sort all chats by timestamp
+    const sortedChats = [...allChats].sort((a, b) => {
+      const aTime = a.timeStamp?.toDate?.() || a.timeStamp || new Date(0);
+      const bTime = b.timeStamp?.toDate?.() || b.timeStamp || new Date(0);
+      return new Date(bTime).getTime() - new Date(aTime).getTime();
+    });
+    
+    // Remove duplicates by id
+    const uniqueChats = sortedChats.filter((chat, index, self) => 
+      index === self.findIndex(c => c.id === chat.id)
+    );
+    
+    callback(uniqueChats);
+  };
 
-  return onSnapshot(
-    chatsQuery,
+  // Subscribe to new chatList collection
+  const chatListQuery = query(collection(db, "chatList"), orderBy("timeStamp", "desc"));
+  const unsubscribeChatList = onSnapshot(
+    chatListQuery,
     (snapshot) => {
-      const allChats = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ChatListDataType[]
-
-      const userChats = allChats.filter((chat) => chat.participants[userId])
+      // Remove old chatList entries
+      const chatListIds = new Set(snapshot.docs.map(doc => doc.id));
+      const filtered = allChats.filter(c => !chatListIds.has(c.id) || c.id?.includes('-'));
+      allChats.length = 0;
+      allChats.push(...filtered);
       
-      console.log("Chats subscription update for user", userId, ":", userChats.length)
-      callback(userChats)
+      snapshot.docs.forEach((doc) => {
+        const normalized = normalizeChatData(doc.data(), doc.id);
+        if (normalized && (
+          Array.isArray(doc.data().participants) 
+            ? doc.data().participants.includes(userId)
+            : normalized.participants[userId]
+        )) {
+          allChats.push(normalized);
+        }
+      });
+      
+      chatListLoaded = true;
+      if (chatListLoaded) mergeAndCallback();
     },
     (error) => {
-      console.error("Error in user chats subscription:", error)
-      callback([])
+      console.error("Error in chatList subscription:", error);
+      chatListLoaded = true;
+      mergeAndCallback();
+    }
+  );
+
+  // Subscribe to legacy "chats" collection
+  const legacyChatsQuery = query(collection(db, "chats"));
+  const unsubscribeLegacyChats = onSnapshot(
+    legacyChatsQuery,
+    (snapshot) => {
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        // Check if user is a participant (array format)
+        if (Array.isArray(data.participants) && data.participants.includes(userId)) {
+          const normalized = normalizeChatData(data, doc.id);
+          if (normalized && !allChats.find(c => c.id === normalized.id)) {
+            allChats.push(normalized);
+          }
+        }
+      });
+      
+      legacyChatsLoaded = true;
+      if (chatListLoaded) mergeAndCallback();
     },
-  )
+    (error) => {
+      console.error("Error in legacy chats subscription:", error);
+      legacyChatsLoaded = true;
+      mergeAndCallback();
+    }
+  );
+
+  // Return cleanup function
+  return () => {
+    unsubscribeChatList();
+    unsubscribeLegacyChats();
+  };
 }
 
 // // Mark messages as read

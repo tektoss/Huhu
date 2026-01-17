@@ -93,9 +93,10 @@ export default function JobListingPage() {
   const handleSearch = () => {
     const search = searchTerm.toLowerCase();
     const filtered = allJobs.filter((job) =>
-      job.title.toLowerCase().includes(search) ||
-      job.category.toLowerCase().includes(search) ||
-      job.description.toLowerCase().includes(search)
+      (job.title || job.name || "").toLowerCase().includes(search) ||
+      (job.category || job.consultType || "").toLowerCase().includes(search) ||
+      (job.description || job.jDescription || "").toLowerCase().includes(search) ||
+      (job.company || job.vendor?.Company || "").toLowerCase().includes(search)
     );
     setFilteredJobs(filtered);
   };
@@ -161,33 +162,40 @@ export default function JobListingPage() {
             {
             filteredJobs?.length !== 0 ? (
               filteredJobs.map((product: jobListing) => (
-              <button key={product.id} onClick={() => router.push(`/job/${product.id}`) } className="hover:bg-slate-100 border border-slate-400 rounded-lg p-2 flex flex-col w-full gap-y-2">
-                <div className="w-full">
-                  <div className="flex flex justify-between items-center w-full">
-                    <div className="h-[40px] flex items-center">
-                      <div className="me-[7px] w-[40px] h-[40px] rounded-full bg-slate-300 border border-slate-500 overflow-hidden">
+              <button key={product.id} onClick={() => router.push(`/job/${product.id}`) } className="hover:bg-slate-100 border border-slate-400 rounded-lg p-3 flex flex-col w-full gap-y-2 overflow-hidden">
+                <div className="w-full overflow-hidden">
+                  <div className="flex justify-between items-center w-full gap-2">
+                    <div className="h-[40px] flex items-center min-w-0 flex-1">
+                      <div className="flex-shrink-0 me-[7px] w-[40px] h-[40px] rounded-full bg-slate-300 border border-slate-500 overflow-hidden">
                         <Image  
-                          src={product.image || "/suit_case.jpg"}
+                          src={product.image || product.vendor?.photoUrl || "/suit_case.jpg"}
                           alt="company" 
                           width={200}
                           height={200}
                           className="object-cover w-[40px] h-[40px] rounded-full"
                         />
                       </div>
-                      <p className="text-[0.85em] font-semibold truncate">{product.company}</p>
+                      <p className="text-[0.85em] font-semibold truncate max-w-[150px]">{product.company || product.vendor?.Company || "Company"}</p>
                     </div>
-                    <p className="text-[0.72em] text-slate-500">{getPostedTimeFromFirestore(product.createdAt)}</p>
+                    <p className="text-[0.72em] text-slate-500 flex-shrink-0 whitespace-nowrap">{getPostedTimeFromFirestore(product.createdAt || product.datePosted)}</p>
                   </div>
                 </div>
-                <h5 className="text-[1em] text-left font-bold text-slate-700">{product.title}</h5>
-                <div className="flex flex-wrap gap-2">
-                  {product.skills.map((type) => (
-                    <div key={type} className="font-semibold p-1 bg-slate-300 text-slate-500 rounded text-[0.75em]">{type}</div>
-                  ))}
-                </div>
+                <h5 className="text-[1em] text-left font-bold text-slate-700 truncate w-full">{product.title || product.name || "Untitled Job"}</h5>
+                {(product.skills && product.skills.length > 0) ? (
+                  <div className="flex flex-wrap gap-1 overflow-hidden max-h-[60px]">
+                    {product.skills.slice(0, 4).map((type) => (
+                      <div key={type} className="font-semibold p-1 bg-slate-300 text-slate-500 rounded text-[0.7em] truncate max-w-[100px]">{type}</div>
+                    ))}
+                    {product.skills.length > 4 && (
+                      <div className="font-semibold p-1 bg-slate-200 text-slate-400 rounded text-[0.7em]">+{product.skills.length - 4}</div>
+                    )}
+                  </div>
+                ) : product.jobType ? (
+                  <p className="text-[0.8em] text-slate-500 truncate w-full">{product.jobType}</p>
+                ) : null}
                 <div className="flex gap-2 items-center text-slate-600">
-                  <Banknote />
-                  <p className="text-[0.95em] font-semibold">{product.salary}</p>
+                  <Banknote className="flex-shrink-0 w-5 h-5" />
+                  <p className="text-[0.95em] font-semibold truncate">{product.salary || "Salary not specified"}</p>
                 </div>
               </button>
             ))) :

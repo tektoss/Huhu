@@ -50,21 +50,50 @@ interface JobPoster {
   companyName?: string
 }
 
-interface JobData extends FirebaseProduct {
+interface JobData {
+  id: string
   employmentType?: "Full-time" | "Part-time" | "Contract" | "Freelance" | "Internship"
   salary?: string
-  title: string
+  title?: string
+  name?: string  // legacy field
   image?: string
+  images?: string[]  // for delete modal
   experience?: "Entry Level" | "Mid Level" | "Senior Level" | "Executive"
   skills?: string[]
+  jobType?: string  // legacy field
   benefits?: string[]
   applicationDeadline?: any
   company?: string
-  contact: {email: string, phone: string}
+  contact?: {email?: string, phone?: string}
   industry?: string
   workLocation?: string
+  location?: { state?: string; town?: string; region?: string; suburb?: string }
   applicationEmail?: string
   externalLink?: string
+  jDescription?: string  // legacy field
+  description?: string
+  datePosted?: any  // legacy field
+  createdAt?: any
+  category?: string
+  viewCount?: number
+  userId?: string
+  vendor?: { 
+    uid?: string
+    Company?: string
+    photoUrl?: string
+    addresss?: string
+    name?: string
+    image?: string
+  }
+  // Additional legacy fields
+  PhoneNumber?: string
+  companytEmail?: string
+  consultType?: string
+  jComBenefit?: string
+  jExpectation?: string
+  jMinEducation?: string
+  jcomBlurb?: string
+  jtravelReq?: string
 }
 
 export default function JobPage() {
@@ -134,7 +163,7 @@ export default function JobPage() {
         setError(null)
 
         // Fetch the job by ID
-        const jobDocRef = doc(db, "jobListing", id)
+        const jobDocRef = doc(db, "Job", id)
         const jobDocSnap = await getDoc(jobDocRef)
 
         console.log("Does not live here 1");
@@ -145,8 +174,9 @@ export default function JobPage() {
           return
         }
 
-        // Get the job data
+        // Get the job data - include the document ID
         const jobData = {
+          id: jobDocSnap.id,
           ...jobDocSnap.data(),
         } as JobData
 
@@ -167,25 +197,33 @@ export default function JobPage() {
         setViewCount(jobData.viewCount || 0)
 
         // Fetch similar jobs from the same category
-        const similarJobsQuery = query(
-          collection(db, "jobListing"),
-            where("category", "==", jobData.category),
-            where("id", "!=", jobData.id),
-            limit(3)
-        )
+        try {
+          if (jobData.category) {
+            const similarJobsQuery = query(
+              collection(db, "Job"),
+              where("category", "==", jobData.category),
+              limit(4)
+            )
 
-        
-        
+            const similarJobsSnapshot = await getDocs(similarJobsQuery)
 
-        const similarJobsSnapshot = await getDocs(similarJobsQuery)
+            if (!similarJobsSnapshot.empty) {
+              // Filter out the current job by document ID
+              const similarJobsData = similarJobsSnapshot.docs
+                .filter((doc) => doc.id !== id)
+                .slice(0, 3)
+                .map((doc) => ({
+                  id: doc.id,
+                  ...doc.data(),
+                })) as JobData[]
 
-        if (!similarJobsSnapshot.empty) {
-          const similarJobsData = similarJobsSnapshot.docs.map((doc) => ({
-            ...doc.data(),
-          })) as JobData[]
-
-          setSimilarJobs(similarJobsData)
-        } else {
+              setSimilarJobs(similarJobsData)
+            } else {
+              setSimilarJobs([])
+            }
+          }
+        } catch (similarErr) {
+          console.error("Error fetching similar jobs:", similarErr)
           setSimilarJobs([])
         }
 
@@ -261,7 +299,7 @@ export default function JobPage() {
       dispatch(
         openDeleteProductModal({
           productId: job.id,
-          productName: job.name,
+          productName: job.name || job.title || "Job",
           images: job.images || [],
         }),
       )
@@ -333,15 +371,15 @@ export default function JobPage() {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title || job.name || "Untitled Job"}</h1>
                   <div className="flex flex-col md:flex-row md:items-center gap-3 text-gray-600 mb-4">
                     <span className="flex items-center">
                       <Briefcase className="w-4 h-4 mr-1" />
-                      {job.company || "Company"}
+                      {job.company || job.vendor?.Company || "Company"}
                     </span>
                     <span className="flex items-center">
                       <MapPin className="w-4 h-4 mr-1" />
-                      {job.workLocation || "Location not specified"}
+                      {job.workLocation || (job.location?.town && job.location?.state ? `${job.location.town}, ${job.location.state}` : job.location?.state || job.location?.town) || "Location not specified"}
                     </span>
                     {/* <span className="flex items-center">
                       <Eye className="w-4 h-4 mr-1" />
@@ -407,7 +445,7 @@ export default function JobPage() {
               </div>
 
               <div className="text-sm text-gray-500">
-                Posted {job.createdAt ? ` on ${new Date(job.createdAt.toDate()).toLocaleDateString()}` : " recently"}
+                Posted {(job.createdAt || job.datePosted) ? ` on ${new Date((job.createdAt || job.datePosted).toDate()).toLocaleDateString()}` : " recently"}
               </div>
             </div>
 
@@ -415,38 +453,89 @@ export default function JobPage() {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-semibold mb-4">Job Description</h2>
               <div className="prose max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap">{job.description}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{job.description || job.jDescription || "No description provided."}</p>
               </div>
             </div>
 
             {/* Skills Required */}
-            {job.skills && job.skills.length > 0 && (
+            {(job.skills && job.skills.length > 0) || job.jobType ? (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold mb-4">Skills Required</h2>
+                <h2 className="text-xl font-semibold mb-4">{job.skills ? "Skills Required" : "Job Type"}</h2>
                 <div className="flex flex-wrap gap-2">
-                  {job.skills.map((skill, index) => (
+                  {job.skills ? job.skills.map((skill, index) => (
                     <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                       {skill}
                     </span>
-                  ))}
+                  )) : (
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                      {job.jobType}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Job Expectations/Requirements (legacy) */}
+            {job.jExpectation && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4">Requirements</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">{job.jExpectation}</p>
+              </div>
+            )}
+
+            {/* Education & Travel Requirements */}
+            {(job.jMinEducation || job.jtravelReq) && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4">Additional Requirements</h2>
+                <div className="space-y-3">
+                  {job.jMinEducation && (
+                    <div className="flex items-start">
+                      <GraduationCap className="w-5 h-5 text-gray-400 mr-2 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-500">Education</p>
+                        <p className="font-medium">{job.jMinEducation}</p>
+                      </div>
+                    </div>
+                  )}
+                  {job.jtravelReq && (
+                    <div className="flex items-start">
+                      <MapPin className="w-5 h-5 text-gray-400 mr-2 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-500">Travel Requirements</p>
+                        <p className="font-medium">{job.jtravelReq}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Benefits */}
-            {/* {job.benefits && job.benefits.length > 0 && (
+            {/* Benefits (legacy jComBenefit or new benefits array) */}
+            {(job.jComBenefit || (job.benefits && job.benefits.length > 0)) && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-xl font-semibold mb-4">Benefits</h2>
-                <ul className="space-y-2">
-                  {job.benefits.map((benefit, index) => (
-                    <li key={index} className="flex items-center text-gray-700">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
+                {job.benefits && job.benefits.length > 0 ? (
+                  <ul className="space-y-2">
+                    {job.benefits.map((benefit, index) => (
+                      <li key={index} className="flex items-center text-gray-700">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-700 whitespace-pre-wrap">{job.jComBenefit}</p>
+                )}
               </div>
-            )} */}
+            )}
+
+            {/* Company About (legacy jcomBlurb) */}
+            {job.jcomBlurb && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4">About the Company</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">{job.jcomBlurb}</p>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -457,7 +546,7 @@ export default function JobPage() {
               <div className="flex items-center mb-4">
                 <div className="relative w-12 h-12 mr-3 bg-slate-300 border border-slate-600 overflow-hidden rounded-full">
                   <Image
-                    src={job.image || "/suit_case.jpg"}
+                    src={job.image || job.vendor?.photoUrl || "/suit_case.jpg"}
                     alt="Company"
                     fill
                     className="object-cover w-12 h-12 rounded-full"
@@ -465,14 +554,34 @@ export default function JobPage() {
                 </div>
                 <div>
                   <p className="font-medium">
-                    { job.company }
+                    { job.company || job.vendor?.Company || "Company" }
                   </p>
-                  { job?.category && (
-                      <p className="text-sm text-gray-600">{job.category}</p>
+                  { (job?.category || job?.consultType) && (
+                      <p className="text-sm text-gray-600">{job.category || job.consultType}</p>
                     )
                   }
                 </div>
               </div>
+              {/* Contact Info */}
+              {(job.contact?.email || job.contact?.phone || job.companytEmail || job.PhoneNumber || job.vendor?.addresss) && (
+                <div className="border-t pt-4 mt-4 space-y-2">
+                  {(job.contact?.email || job.companytEmail) && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Email:</span> {job.contact?.email || job.companytEmail}
+                    </p>
+                  )}
+                  {(job.contact?.phone || job.PhoneNumber) && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Phone:</span> {job.contact?.phone || job.PhoneNumber}
+                    </p>
+                  )}
+                  {job.vendor?.addresss && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Address:</span> {job.vendor.addresss}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Application Actions */}

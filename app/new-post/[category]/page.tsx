@@ -254,30 +254,35 @@ export default function NewPostPage() {
         const productData = {
             id: productId,
             name: formData.name,
-            price: Number.parseFloat(formData.price),
+            price: formData.price,
             brand: finalBrand,
             condition: formData.condition,
-            description: formData.description,
+            details: formData.description,
             location: {
-            region: formData.region,
-            suburb: formData.suburb,
-            },
-            promotion: {
-            isPromoted: false,
-            datePromoted:"",
-            dateOfExpiry:"",
-            promoType: ""
+              state: formData.region,
+              town: formData.suburb,
+              country: "Ghana",
+              coordinates: {
+                latitude: 0,
+                longitude: 0,
+              },
+              locationIsSet: false,
             },
             images: uploadedImages,
-            imagesData,
-            vendor:{
-            uid: user?.uid || "",   
-            image: user?.photoURL || "",
-            name: user?.displayName || "", 
-            },
-            category: categoryTitle || "uncategorized",
+            itemType: categoryTitle === "vehicles" ? "vehicles" : categoryTitle === "electronics" ? "electronics" : "others",
+            mainCategory: categoryTitle || "uncategorized",
+            category: categoryTitle?.toLowerCase() || "uncategorized",
+            isPromoted: false,
+            status: "active",
+            postedFrom: "Web",
             viewCount: [],
-            createdAt: serverTimestamp(),
+            datePosted: serverTimestamp(),
+            lastEdited: serverTimestamp(),
+            vendor:{
+              uid: user?.uid || "",   
+              photoUrl: user?.photoURL || "",
+              displayName: user?.displayName || "", 
+            },
         }
 
           console.log("Form submitted:", productData)
@@ -285,9 +290,9 @@ export default function NewPostPage() {
           setSubmittedData(productData)
           setIsSubmitted(false);
 
-          //   await addDoc(collection(db, "productListing"), productData);
-          //   await addDoc(collection(db, "productListing"), productData);
-          await setDoc(doc(db, "productListing", productId), productData);
+          //   await addDoc(collection(db, "products"), productData);
+          //   await addDoc(collection(db, "products"), productData);
+          await setDoc(doc(db, "products", productId), productData);
 
           showToast("Post added successfully","success");
           setFormData(initialFormState);

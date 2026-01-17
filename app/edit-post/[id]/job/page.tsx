@@ -560,7 +560,7 @@ export default function JobPostUpdatePage() {
       // In a real app, you would submit this data to your backend
       console.log("Job posting submitted:", jobData)
 
-      const jobsRef = doc(db, "jobListing", id);
+      const jobsRef = doc(db, "Job", id);
 
       await updateDoc(jobsRef, jobData);
       
@@ -596,7 +596,7 @@ export default function JobPostUpdatePage() {
         setError(null)
   
         // Fetch the product by ID
-        const productDocRef = doc(db, "jobListing", id)
+        const productDocRef = doc(db, "Job", id)
         const productDocSnap = await getDoc(productDocRef)
        
         if (!productDocSnap.exists()) {

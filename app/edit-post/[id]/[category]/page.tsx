@@ -334,14 +334,14 @@ export default function EditPage() {
 
           console.log("Form submitted for edit:", productData)
 
-          const productRef = doc(db, "productListing", id);
+          const productRef = doc(db, "products", id);
 
           await updateDoc(productRef, productData);
 
         //   setSubmittedData(productData)
         //   setIsSubmitted(false);
 
-        //   await setDoc(doc(db, "productListing", productId), productData);
+        //   await setDoc(doc(db, "products", productId), productData);
 
           showToast("Post updated successfully","success");
           // setFormData(initialState);
@@ -368,7 +368,7 @@ export default function EditPage() {
         setError(null)
   
         // Fetch the product by ID
-        const productDocRef = doc(db, "productListing", id)
+        const productDocRef = doc(db, "products", id)
         const productDocSnap = await getDoc(productDocRef)
         
         if (!productDocSnap.exists()) {

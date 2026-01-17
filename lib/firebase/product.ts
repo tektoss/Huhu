@@ -8,7 +8,7 @@ import { db, storage } from "./firebase"
 // export async function deleteProduct(productId: string, imageUrls: string[] = []): Promise<void> {
 //   try {
 //     // Delete the product document from Firestore
-//     const productRef = doc(db, "productListing", productId)
+//     const productRef = doc(db, "products", productId)
 //     await deleteDoc(productRef)
 
 //     // Delete all associated images from Firebase Storage
@@ -58,7 +58,7 @@ export async function deleteProduct(productId: string, imagePaths: string[] = []
   const storage = getStorage();
   const processedFolders = new Set<string>();
 
-  const productRef = doc(db, "productListing", productId)
+  const productRef = doc(db, "products", productId)
   await deleteDoc(productRef)
 
   for (const imagePath of imagePaths) {
@@ -104,7 +104,7 @@ export async function deleteProduct(productId: string, imagePaths: string[] = []
  */
 export async function updateProduct(productId: string, updates: Partial<any>): Promise<void> {
   try {
-    const productRef = doc(db, "productListing", productId)
+    const productRef = doc(db, "products", productId)
 
     // Add updatedAt timestamp
     const updateData = {
@@ -125,7 +125,7 @@ export async function updateProduct(productId: string, updates: Partial<any>): P
  */
 export async function getProduct(productId: string): Promise<any | null> {
   try {
-    const productRef = doc(db, "productListing", productId)
+    const productRef = doc(db, "products", productId)
     const productSnap = await getDoc(productRef)
 
     if (productSnap.exists()) {

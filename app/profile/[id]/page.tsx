@@ -18,7 +18,7 @@ import LoadingSpinner from "@/components/loading-spinner"
 import { formatDistanceToNow } from 'date-fns';
 import { getPostedTimeFromFirestore } from "@/utils/getters"
 import { showToast } from "@/utils/showToast"
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore"
+import { doc, serverTimestamp, setDoc } from "firebase/firestore"
 import { getAuth, updateProfile } from "firebase/auth"
 
 export default function ProfilePage() {
@@ -61,26 +61,52 @@ export default function ProfilePage() {
 
   const [showEditModal, setShowEditModal] = useState(false)
   const [tab, setTab] = useState< "products" | "jobs" >("products")
+
+  const locationText = [formData?.location?.region, formData?.location?.suburb].filter(Boolean).join(", ")
+  const hasEmail = typeof formData?.email === "string" && formData.email.trim().length > 0 && formData.email.toLowerCase() !== "unknown"
+  const hasPhone = typeof formData?.phone === "string" && formData.phone.trim().length > 0 && formData.phone.toLowerCase() !== "unknown"
+  const emailDisplay = hasEmail ? formData.email : ""
+  const phoneDisplay = hasPhone ? formData.phone : ""
+  const hasContactDetails = hasEmail || hasPhone
   
   const loadUserData = async () => {
     setLoading(true);
     const userData = await getUserData(id);
 
+    // Use Firebase Auth displayName as fallback for own profile
+    const isOwnProfile = user?.uid === id;
+    
+    // Build display name from multiple sources
+    const nameFromUserData = userData?.displayName && userData.displayName !== "Unknown User" 
+      ? userData.displayName 
+      : "";
+    const nameFromAuth = isOwnProfile && user?.displayName ? user.displayName : "";
+    const nameFromFirstLast = [userData?.firstName, userData?.lastName].filter(Boolean).join(" ").trim();
+    
+    const resolvedDisplayName = nameFromUserData || nameFromAuth || nameFromFirstLast || "Unknown User";
+    
+    const resolvedPhotoURL = 
+      userData?.photoURL && !userData.photoURL.includes("placeholder")
+        ? userData.photoURL
+        : isOwnProfile && user?.photoURL
+          ? user.photoURL
+          : userData?.photoURL || "/user_placeholder.png";
+
     setFormData({
-      displayName: userData?.displayName,
+      displayName: resolvedDisplayName,
       phone: userData?.phone,
-      email: userData?.email,
+      email: userData?.email || (isOwnProfile ? user?.email : "") || "",
       location: {region: (userData?.location?.region || ""), suburb: (userData?.location?.suburb || "")},
-      photoURL: userData?.photoURL,
+      photoURL: resolvedPhotoURL,
       createdAt: userData?.createdAt,
     });
 
     setEditFormData({
-      displayName: userData?.displayName,
+      displayName: resolvedDisplayName,
       phone: userData?.phone,
-      email: userData?.email,
+      email: userData?.email || (isOwnProfile ? user?.email : "") || "",
       location: {region: (userData?.location?.region || ""), suburb: (userData?.location?.suburb || "")},
-      photoURL: userData?.photoURL,
+      photoURL: resolvedPhotoURL,
       createdAt: userData?.createdAt,
     });
 
@@ -202,42 +228,48 @@ export default function ProfilePage() {
     if (validateForm()) {
       setEditLoading(true);
       
-
-    const finalFormData = {
-      displayName: editFormData?.displayName,
-      phone: editFormData?.phone,
-      email: editFormData?.email,
-      location: {region: (editFormData?.location?.region || ""), suburb: (editFormData?.location?.suburb || "")},
-      photoURL: imageData?.url,
-      imageData,
-      lastUpdated: serverTimestamp(),
-    }
-
-    console.log("edited data", finalFormData);
-
-    const userRef = doc(db, "users", id);
-    
-    await updateDoc(userRef, finalFormData);
-
-    if (user) {
       try {
-        await updateProfile(user, {
-          photoURL: imageData?.url || "",
-          displayName: editFormData?.displayName, 
-        });
-        console.log("Photo URL updated!");
+        const finalFormData = {
+          displayName: editFormData?.displayName,
+          phone: editFormData?.phone,
+          email: editFormData?.email,
+          location: {region: (editFormData?.location?.region || ""), suburb: (editFormData?.location?.suburb || "")},
+          photoURL: imageData?.url,
+          imageData,
+          lastUpdated: serverTimestamp(),
+        }
+
+        console.log("edited data", finalFormData);
+
+        const userRef = doc(db, "users", id);
+        
+        // Use setDoc with merge to create doc if it doesn't exist
+        await setDoc(userRef, finalFormData, { merge: true });
+
+        if (user) {
+          try {
+            await updateProfile(user, {
+              photoURL: imageData?.url || "",
+              displayName: editFormData?.displayName, 
+            });
+            console.log("Photo URL updated!");
+          } catch (error) {
+            console.error("Error updating photoURL:", error);
+          }
+        } else {
+          console.warn("No user is currently signed in.");
+        }
+        
+        setShowEditModal(false);
+        showToast("Profile updated successfully","success");
+        setTime(Date.now());
+        window.location.reload();
       } catch (error) {
-        console.error("Error updating photoURL:", error);
+        console.error("Error updating profile:", error);
+        showToast("Failed to update profile. Please try again.", "error");
+      } finally {
+        setEditLoading(false);
       }
-    } else {
-      console.warn("No user is currently signed in.");
-    }
-      setShowEditModal(false);
-      setEditLoading(false);
-      window.location.reload();
-      setTime(Date.now());
-      showToast("Post updated successfully","success");
-      
     }
   }
 
@@ -248,6 +280,7 @@ export default function ProfilePage() {
       console.error("Error logging out:", error)
     }
   }
+  console.log("listings", listings);
 
   if (loading) {
     return (
@@ -284,9 +317,12 @@ export default function ProfilePage() {
                       Edit Profile
                     </button>
                   </div>
-                  {formData?.location?.region && <p className="text-gray-600">{`${`${formData?.location?.region}, ${formData?.location?.suburb}` || ""}`}</p>}
-                  {formData?.email && <p className="text-gray-600">{`${formData?.email || "Unknown"}`}</p>}
-                  {formData?.phone && <p className="text-gray-600">{`${formData?.phone || "Unknown"}`}</p>}
+                  {locationText && <p className="text-gray-600">{locationText}</p>}
+                  {hasEmail && <p className="text-gray-600">{emailDisplay}</p>}
+                  {hasPhone && <p className="text-gray-600">{phoneDisplay}</p>}
+                  {!hasContactDetails && (
+                    <p className="text-sm text-gray-500 italic">Vendor has not shared contact details yet.</p>
+                  )}
                   {formData?.createdAt && <p className="mt-2 text-gray-600">{`Member since January ${new Date(formData?.createdAt).getFullYear()}`}</p>}
                   <div className="flex justify-center mt-4 space-x-4 md:justify-start">
                     <div className="text-center">
@@ -373,7 +409,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="p-4">
                     <h3 className="font-medium truncate">{item.name}</h3>
-                    <p className="mt-1 font-medium">${(item.price).toFixed(2)}</p>
+                    <p className="mt-1 font-medium">${typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2)}</p>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-gray-500">{getPostedTimeFromFirestore(item.createdAt)}</span>
                       <span className="px-2 py-1 text-xs text-white bg-green-500 rounded-full">Active</span>
@@ -399,33 +435,41 @@ export default function ProfilePage() {
               ) :
             (<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 ">
               {jobs.map((job) => (
-                <button key={job.id} onClick={() => router.push(`/job/${job.id}`) } className="hover:bg-slate-100 border border-slate-400 rounded-lg p-2 flex flex-col w-full gap-y-2">
-                <div className="w-full">
-                  <div className="flex flex justify-between items-center w-full">
-                    <div className="h-[40px] flex items-center">
-                      <div className="me-[7px] w-[40px] h-[40px] rounded-full bg-slate-300 border border-slate-500 overflow-hidden">
+                <button key={job.id} onClick={() => router.push(`/job/${job.id}`) } className="hover:bg-slate-100 border border-slate-400 rounded-lg p-3 flex flex-col w-full gap-y-2 overflow-hidden">
+                <div className="w-full overflow-hidden">
+                  <div className="flex justify-between items-center w-full gap-2">
+                    <div className="h-[40px] flex items-center min-w-0 flex-1">
+                      <div className="flex-shrink-0 me-[7px] w-[40px] h-[40px] rounded-full bg-slate-300 border border-slate-500 overflow-hidden">
                         <Image  
-                          src={job.image || "/suit_case.jpg"}
+                          src={job.image || job.vendor?.photoUrl || "/suit_case.jpg"}
                           alt="company" 
                           width={200}
                           height={200}
                           className="object-cover w-[40px] h-[40px] rounded-full"
                         />
                       </div>
-                      <p className="text-[0.85em] font-semibold truncate">{job.company}</p>
+                      <p className="text-[0.85em] font-semibold truncate max-w-[120px]">{job.company || job.vendor?.Company || "Company"}</p>
                     </div>
-                    <p className="text-[0.72em] text-slate-500">{getPostedTimeFromFirestore(job.createdAt)}</p>
+                    <p className="text-[0.72em] text-slate-500 flex-shrink-0 whitespace-nowrap">{getPostedTimeFromFirestore(job.createdAt || job.datePosted)}</p>
                   </div>
                 </div>
-                <h5 className="text-[1em] text-left font-bold text-slate-700">{job.title}</h5>
-                <div className="flex flex-wrap gap-2">
-                  {job.skills.map((type) => (
-                    <div key={type} className="font-semibold p-1 bg-slate-300 text-slate-500 rounded text-[0.75em]">{type}</div>
-                  ))}
-                </div>
+                <h5 className="text-[1em] text-left font-bold text-slate-700 truncate w-full">{job.title || job.name || "Untitled Job"}</h5>
+                {(job.skills && job.skills.length > 0) && (
+                  <div className="flex flex-wrap gap-1 overflow-hidden max-h-[60px]">
+                    {job.skills.slice(0, 4).map((type) => (
+                      <div key={type} className="font-semibold p-1 bg-slate-300 text-slate-500 rounded text-[0.7em] truncate max-w-[100px]">{type}</div>
+                    ))}
+                    {job.skills.length > 4 && (
+                      <div className="font-semibold p-1 bg-slate-200 text-slate-400 rounded text-[0.7em]">+{job.skills.length - 4}</div>
+                    )}
+                  </div>
+                )}
+                {job.jobType && (
+                  <p className="text-[0.8em] text-slate-500 truncate w-full">{job.jobType}</p>
+                )}
                 <div className="flex gap-2 items-center text-slate-600">
-                  <Banknote />
-                  <p className="text-[0.95em] font-semibold">{job.salary}</p>
+                  <Banknote className="flex-shrink-0 w-5 h-5" />
+                  <p className="text-[0.95em] font-semibold truncate">{job.salary || "Salary not specified"}</p>
                 </div>
               </button>
               ))}
@@ -441,7 +485,7 @@ export default function ProfilePage() {
             <div className="w-full max-w-md p-6 bg-white rounded-lg">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Edit Profile</h2>
-                <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-black">
+                <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-black" aria-label="Close modal">
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -486,7 +530,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="mb-4">
-                  <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-700">
+                  <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -495,12 +539,13 @@ export default function ProfilePage() {
                     name="email"
                     value={editFormData.email}
                     readOnly={true}
+                    placeholder="Enter your email"
                     className="w-full text-slate-400 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
 
                 <div className="mb-4">
-                  <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-700">
+                  <label htmlFor="phone" className="block mb-2 text-sm font-medium text-gray-700">
                     Phone
                   </label>
                   <input
@@ -509,6 +554,7 @@ export default function ProfilePage() {
                     name="phone"
                     value={editFormData.phone}
                     onChange={handleChange}
+                    placeholder="Enter your phone number"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                   />
                   {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}

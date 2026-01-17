@@ -344,7 +344,7 @@ export default function PropertyUpdateFormPage() {
       // Log the collected form data
       console.log("Property Form Submission Data:", propertyData)
 
-      const productRef = doc(db, "productListing", id);
+      const productRef = doc(db, "products", id);
           
       await updateDoc(productRef, propertyData);
     
@@ -377,7 +377,7 @@ export default function PropertyUpdateFormPage() {
            setError(null)
      
            // Fetch the product by ID
-           const productDocRef = doc(db, "productListing", id)
+           const productDocRef = doc(db, "products", id)
            const productDocSnap = await getDoc(productDocRef)
           
            if (!productDocSnap.exists()) {

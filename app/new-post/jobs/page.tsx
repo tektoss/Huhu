@@ -465,7 +465,7 @@ export default function NewJobPostPage() {
       const uploadImage = await uploadSingleImage(image,productId);
 
       // Prepare the data object
-      const jobData = {
+      const jobData: Record<string, any> = {
         id: productId,
         title: formData.title,
         company: formData.company,
@@ -491,8 +491,6 @@ export default function NewJobPostPage() {
         applicationDeadline: formData.applicationDeadline,
         experience: formData.experience,
         employmentType: formData.employmentType,
-        image: uploadImage?.downloadURL,
-        imageData: uploadImage?.imageData,
         createdAt: serverTimestamp(),
         externalLink: formData.externalLink,
         vendor: {
@@ -502,10 +500,16 @@ export default function NewJobPostPage() {
         }
       }
 
+      // Only add image fields if an image was uploaded
+      if (uploadImage) {
+        jobData.image = uploadImage.downloadURL;
+        jobData.imageData = uploadImage.imageData;
+      }
+
       // In a real app, you would submit this data to your backend
       console.log("Job posting submitted:", jobData)
 
-      await setDoc(doc(db, "jobListing", productId), jobData);
+      await setDoc(doc(db, "Job", productId), jobData);
       
       // Show the submitted data
       // setSubmittedData(jobData)

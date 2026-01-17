@@ -28,6 +28,7 @@ export interface FirebaseProduct {
     size: number
     type: string
   }
+  itemType?: 'electronics' | 'vehicles' | 'apartments' | 'jobs' | 'others'
   salaryDetail?: {
     salaryMin?: number
     salaryMax?: number
@@ -36,10 +37,31 @@ export interface FirebaseProduct {
   category?: string
   otherCategory?: string
   condition?: string
-  location: {region: string, suburb: string}
+  location: {
+    region?: string
+    suburb?: string
+    state?: string
+    town?: string
+    city?: string
+    province?: string
+    country?: string
+    coordinates?: { latitude?: number; longitude?: number }
+  }
   createdAt?: any
   userId?: string
-  vendor?: {image: string, name: string, uid: string}
+  vendor?: {
+    image?: string
+    name?: string
+    uid?: string
+    displayName?: string
+    fullName?: string
+    companyName?: string
+    photoURL?: string
+    photoUrl?: string
+    avatar?: string
+    Company?: string
+    addresss?: string
+  }
   tag?: string
   salaryMin?: number
   employmentType?: string
@@ -89,7 +111,7 @@ export const getProducts = async (): Promise<FirebaseProduct[]> => {
   }
 
   try {
-    const productsQuery = query(collection(db, "productListing"))
+    const productsQuery = query(collection(db, "products"))
     const snapshot = await getDocs(productsQuery)
 
     const products = snapshot.docs.map((doc) => ({
@@ -116,7 +138,7 @@ export const subscribeToProducts = (callback: (products: FirebaseProduct[]) => v
   }
 
   try {
-    const productsQuery = query(collection(db, "productListing"))
+    const productsQuery = query(collection(db, "products"))
 
     // Set up real-time listener
     const unsubscribeFunc = onSnapshot(

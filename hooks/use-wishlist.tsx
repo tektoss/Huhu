@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/lib/firebase/firebase"
 import { showToast } from "@/utils/showToast"
 import { useAuthUser } from "@/lib/auth/hooks/useAuthUser"
@@ -22,11 +22,11 @@ export function useWishlist() {
 
       try {
         setLoading(true)
-        const userDocRef = doc(db, "users", user.uid)
-        const userDoc = await getDoc(userDocRef)
+        const wishlistDocRef = doc(db, "wishlists", user.uid)
+        const wishlistDoc = await getDoc(wishlistDocRef)
 
-        if (userDoc.exists() && userDoc.data().wishlist) {
-          setWishlistItems(userDoc.data().wishlist)
+        if (wishlistDoc.exists() && wishlistDoc.data().itemIds) {
+          setWishlistItems(wishlistDoc.data().itemIds)
         } else {
           // Initialize empty wishlist if it doesn't exist
           setWishlistItems([])
@@ -46,10 +46,14 @@ export function useWishlist() {
     if (!user) return false
 
     try {
-      const userDocRef = doc(db, "users", user.uid)
-      await updateDoc(userDocRef, {
-        wishlist: arrayUnion(productId),
-      })
+      const wishlistDocRef = doc(db, "wishlists", user.uid)
+      await setDoc(
+        wishlistDocRef,
+        {
+          itemIds: arrayUnion(productId),
+        },
+        { merge: true }
+      )
       setWishlistItems((prev) => [...prev, productId])
       showToast("Product added to wishlist successfully", "success")
       return true
@@ -65,12 +69,16 @@ export function useWishlist() {
     if (!user) return false
 
     try {
-      const userDocRef = doc(db, "users", user.uid)
-      await updateDoc(userDocRef, {
-        wishlist: arrayRemove(productId),
-      })
+      const wishlistDocRef = doc(db, "wishlists", user.uid)
+      await setDoc(
+        wishlistDocRef,
+        {
+          itemIds: arrayRemove(productId),
+        },
+        { merge: true }
+      )
       setWishlistItems((prev) => prev.filter((id) => id !== productId))
-      showToast("Product removed from wishlist successfully", "success");
+      showToast("Product removed from wishlist successfully", "success")
       return true
     } catch (error) {
       showToast("Error removing product from wishlist", "error");

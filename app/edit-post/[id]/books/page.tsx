@@ -389,31 +389,41 @@ export default function BookForm() {
       
       // Prepare the data object
       const bookData = {
+          id,
           name: product.name,
-          price: Number(product.price),
+          price: product.price.toString(),
+          mainCategory: "Books",
           location: {
-            region: product?.location?.region,
-            suburb: product?.location?.suburb,
+            state: product?.location?.state || product?.location?.region,
+            town: product?.location?.town || product?.location?.suburb,
+            country: "Ghana",
+            coordinates: product?.location?.coordinates || {
+              latitude: 0,
+              longitude: 0,
+            },
+            locationIsSet: product?.location?.locationIsSet || false,
           },
-          description: product.description,
-          images: [ ...oldImagesData , ...uploadedImages],
-          imagesData: [...oldImages, ...imagesData],
+          details: product.details || product.description,
+          images: [...oldImagesData, ...uploadedImages],
           authors: product.authors,
           publisher: product.publisher,
           datePublished: product.datePublished,
           isbn: product.isbn,
           genre: product.genre,
           language: product.language,
-          pages: Number(product.pages),
+          pages: product.pages,
           format: product.format,
-          category: "books",
+          itemType: "others",
+          isPromoted: product.isPromoted || false,
+          status: product.status || "active",
+          postedFrom: "Web",
           lastEdited: serverTimestamp(),
       }
 
       // In a real app, you would submit this data to your backend
       console.log("Form submitted book form:", bookData)
 
-      const booksRef = doc(db, "productListing", id);
+      const booksRef = doc(db, "products", id);
 
       await updateDoc(booksRef, bookData);
       
@@ -449,7 +459,7 @@ export default function BookForm() {
       setError(null)
 
       // Fetch the product by ID
-      const productDocRef = doc(db, "productListing", id)
+      const productDocRef = doc(db, "products", id)
       const productDocSnap = await getDoc(productDocRef)
      
       if (!productDocSnap.exists()) {

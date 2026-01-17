@@ -68,7 +68,7 @@ export default function NewPostPage() {
           setError(null)
   
           // Fetch the product by ID
-          const productDocRef = doc(db, "productListing", id)
+          const productDocRef = doc(db, "products", id)
           const productDocSnap = await getDoc(productDocRef)
           
           if (!productDocSnap.exists()) {
@@ -313,9 +313,9 @@ export default function NewPostPage() {
           setSubmittedData(productData)
           setIsSubmitted(false);
 
-          //   await addDoc(collection(db, "productListing"), productData);
-          //   await addDoc(collection(db, "productListing"), productData);
-          await setDoc(doc(db, "productListing", productId), productData);
+          //   await addDoc(collection(db, "products"), productData);
+          //   await addDoc(collection(db, "products"), productData);
+          await setDoc(doc(db, "products", productId), productData);
 
           showToast("Post added successfully","success");
           setFormData(initialFormState);

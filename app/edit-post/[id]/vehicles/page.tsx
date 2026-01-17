@@ -339,25 +339,35 @@ export default function VehicleUpdateFormPage() {
         model: formData.model,
         year: formData.year,
         name: `${formData.year} ${formData.make === 'Other' ? '': formData.make} ${formData.model === 'Other' ? '': formData.model}`,
-        price: Number(formData.price),
+        mainCategory: "Cars & Trucks",
+        price: formData.price,
         condition: formData.condition,
+        details: formData.details,
         location: {
-            region: formData.location.region,
-            suburb: formData.location.suburb,
+          state: formData.location?.state || formData.location?.region,
+          town: formData.location?.town || formData.location?.suburb,
+          country: "Ghana",
+          coordinates: formData.location?.coordinates || {
+            latitude: 0,
+            longitude: 0,
+          },
+          locationIsSet: formData.location?.locationIsSet || false,
         },
-        description: formData.description,
-        images: [ ...oldImagesData , ...uploadedImages],
-        imagesData: [...oldImages, ...imagesData],
-        category: "vehicles",
+        images: [...oldImagesData, ...uploadedImages],
+        itemType: "vehicles",
+        isPromoted: formData.isPromoted || false,
+        status: formData.status || "active",
+        postedFrom: "Web",
         vin: formData.vin,
-        mileage: Number(formData.mileage),
+        mileage: formData.mileage,
+        viewCount: formData.viewCount || [],
         lastEdited: serverTimestamp(),
       }
 
       // In a real app, you would submit this data to your backend
       console.log("Vehicle listing submitted:", vehicleData)
 
-      const productRef = doc(db, "productListing", id);
+      const productRef = doc(db, "products", id);
       
       await updateDoc(productRef, vehicleData);
 
@@ -389,7 +399,7 @@ export default function VehicleUpdateFormPage() {
         setError(null)
   
         // Fetch the product by ID
-        const productDocRef = doc(db, "productListing", id)
+        const productDocRef = doc(db, "products", id)
         const productDocSnap = await getDoc(productDocRef)
        
         if (!productDocSnap.exists()) {
@@ -409,13 +419,52 @@ export default function VehicleUpdateFormPage() {
   
         console.log("product data for edit", productData);
   
-        const newImages = productData.imagesData.map((file) => (
-          file
-        )
-        )
+        // Map images - new format uses simple images array
+        const newImages = productData.images?.map((url: string) => ({
+          url,
+          path: "",
+          name: "",
+          size: 0,
+          type: "image",
+        })) || [];
   
         setOldImages(newImages);
-        setFormData(productData);
+        
+        // Map product data to form data structure, handling both old and new formats
+        setFormData({
+          id: productData.id,
+          name: productData.name || "",
+          type: productData.type || "",
+          make: productData.make || "",
+          model: productData.model || "",
+          price: productData.price?.toString() || "",
+          vin: productData.vin || "",
+          mileage: productData.mileage?.toString() || "",
+          images: [],
+          imagesData: [],
+          details: productData.details || productData.description || "",
+          description: productData.details || productData.description || "",
+          year: productData.year || "",
+          condition: productData.condition || "",
+          location: {
+            region: productData.location?.state || productData.location?.region || "",
+            suburb: productData.location?.town || productData.location?.suburb || "",
+            state: productData.location?.state,
+            town: productData.location?.town,
+            country: productData.location?.country,
+            coordinates: productData.location?.coordinates,
+            locationIsSet: productData.location?.locationIsSet,
+          },
+          isPromoted: productData.isPromoted || false,
+          status: productData.status || "active",
+          postedFrom: productData.postedFrom,
+          viewCount: productData.viewCount,
+          itemType: productData.itemType,
+          mainCategory: productData.mainCategory,
+          datePosted: productData.datePosted,
+          lastEdited: productData.lastEdited,
+          vendor: productData.vendor,
+        } as any);
       } catch (err) {
         console.error("Error fetching product:", err)
         setError("Failed to load product. Please try again later.")
@@ -682,7 +731,7 @@ export default function VehicleUpdateFormPage() {
                   <textarea
                     id="details"
                     name="details"
-                    value={formData.description}
+                    value={formData.details}
                     onChange={handleChange}
                     rows={5}
                     className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black ${
@@ -690,7 +739,7 @@ export default function VehicleUpdateFormPage() {
                     }`}
                     placeholder="Describe your vehicle in detail, including its condition, history, features, and any other relevant information."
                   />
-                  {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
+                  {errors.details && <p className="mt-1 text-sm text-red-500">{errors.details}</p>}
                 </div>
 
                 {/* Image Upload */}

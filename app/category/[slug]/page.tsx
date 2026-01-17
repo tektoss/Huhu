@@ -39,6 +39,24 @@ export default function CategoryPage() {
 
   const {slug} : {slug: string} = useParams();
 
+  const extractLocation = (product: FirebaseProduct) => {
+    const rawLocation = typeof product.location === "object" && product.location !== null
+      ? (product.location as Record<string, any>)
+      : null
+
+    const region = rawLocation?.region ?? rawLocation?.state ?? rawLocation?.province ?? null
+    const suburb = rawLocation?.suburb ?? rawLocation?.town ?? rawLocation?.city ?? null
+    const country = rawLocation?.country ?? null
+    const fallback = typeof product.location === "string" ? product.location : ""
+
+    return {
+      region,
+      suburb,
+      country,
+      fallback,
+    }
+  }
+
   useEffect(() => {
     if (!slug) {
       router.push("/not-found");
@@ -53,10 +71,15 @@ export default function CategoryPage() {
         if(validCategories.includes(slug) || slug === "new"){
           setFilteredProducts(listings);
         } else {
-          const filtered = listings.filter((product) =>
-            product.name.toLowerCase().includes(slug) ||
-            product.description.toLowerCase().includes(slug)
-          );
+          const filtered = listings.filter((product) => {
+            const matchesName = product.name.toLowerCase().includes(slug)
+            const matchesDescription = product.description?.toLowerCase()?.includes(slug) ?? false
+            const { region, suburb, fallback } = extractLocation(product)
+            const matchesLocation = [region, suburb, fallback]
+              .some((value) => typeof value === "string" && value.toLowerCase().includes(slug))
+
+            return matchesName || matchesDescription || matchesLocation
+          });
 
           setFilteredProducts(filtered);
         }
@@ -87,15 +110,23 @@ export default function CategoryPage() {
     }
 
     if (filters.priceMin)
-        filtered = filtered.filter((p) => p.price >= Number(filters.priceMin));
+      filtered = filtered.filter((p) => p.price >= Number(filters.priceMin));
     if (filters.priceMax)
-        filtered = filtered.filter((p) => p.price <= Number(filters.priceMax));
+      filtered = filtered.filter((p) => p.price <= Number(filters.priceMax));
     if (filters.condition !== "all" && filters.condition)
-        filtered = filtered.filter((p) => p.condition === filters.condition);
-    if (filters.region !== "all" && filters.region)
-      filtered = filtered.filter((p) => p.location?.region === filters.region);
-    if (filters.suburb !== "all" && filters.suburb)
-      filtered = filtered.filter((p) => p.location?.suburb === filters.suburb);
+      filtered = filtered.filter((p) => p.condition === filters.condition);
+    if (filters.region !== "all" && filters.region) {
+      filtered = filtered.filter((p) => {
+        const { region } = extractLocation(p)
+        return region ? region.toLowerCase() === filters.region.toLowerCase() : false
+      })
+    }
+    if (filters.suburb !== "all" && filters.suburb) {
+      filtered = filtered.filter((p) => {
+        const { suburb } = extractLocation(p)
+        return suburb ? suburb.toLowerCase() === filters.suburb.toLowerCase() : false
+      })
+    }
 
     setSearchTerm("");
     setFilteredProducts(filtered);
@@ -111,10 +142,15 @@ export default function CategoryPage() {
 
   const handleSearch = () => {
     const search = searchTerm.toLowerCase();
-    const filtered = allProducts.filter((product) =>
-      product.name.toLowerCase().includes(search) ||
-      product.description.toLowerCase().includes(search)
-    );
+    const filtered = allProducts.filter((product) => {
+      const matchesName = product.name.toLowerCase().includes(search)
+      const matchesDescription = product.description?.toLowerCase()?.includes(search) ?? false
+      const { region, suburb, fallback } = extractLocation(product)
+      const matchesLocation = [region, suburb, fallback]
+        .some((value) => typeof value === "string" && value.toLowerCase().includes(search))
+
+      return matchesName || matchesDescription || matchesLocation
+    });
     setFilteredProducts(filtered);
   };
 
@@ -225,7 +261,11 @@ export default function CategoryPage() {
                   <label className="block mb-2 text-sm font-medium text-gray-700">Region</label>
                   <select
                     value={filters.region}
-                    onChange={(e) => setFilters({ ...filters, region: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setFilters({ ...filters, region: value, suburb: "all" })
+                      setSelectedRegion(value === "all" ? "" : value)
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                   >
                     <option value="all">All Regions</option>
@@ -259,7 +299,10 @@ export default function CategoryPage() {
 
               <div className="flex justify-end mt-4 space-x-2">
                 <button 
-                  onClick={() => setFilters(initialFilterState) }
+                  onClick={() => {
+                    setFilters(initialFilterState)
+                    setSelectedRegion("")
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
                 >
                   Reset

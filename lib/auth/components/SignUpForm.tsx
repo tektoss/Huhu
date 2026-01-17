@@ -110,7 +110,7 @@ const handleGoogleSignIn = async () => {
         <div className="max-w-md p-8 mx-auto bg-white rounded-lg shadow-sm">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold">Create an Account</h1>
-            <p className="mt-2 text-gray-600">Join Sell Ghana and start buying and selling!</p>
+            <p className="mt-2 text-gray-600">Join Huhu and start buying and selling!</p>
           </div>
 
           {error && <div className="p-3 mb-4 text-sm text-red-500 bg-red-50 rounded-md">{error}</div>}

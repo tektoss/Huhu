@@ -25,12 +25,13 @@ export async function POST(req: NextRequest) {
         await adminDB.collection('users').doc(uid).set({
           firstName,
           lastName,
+          displayName: `${firstName} ${lastName}`.trim(),
           email: decodedToken.email,
           phoneNumber: phoneNumber || '',
           photoURL: '',
           uid,
           createdAt: new Date().toISOString(),
-          provider: 'password',
+          provider: 'google',
         });
   
         return NextResponse.json({ message: 'Google user added to Firestore' }, { status: 200 });
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
         await adminDB.collection('users').doc(userRecord.uid).set({
           firstName,
           lastName,
+          displayName: `${firstName} ${lastName}`.trim(),
           email,
           phoneNumber,
           uid: userRecord.uid,

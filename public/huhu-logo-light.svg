@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Huhu logo for dark backgrounds</title>
+  <desc>Huhu marketplace brand mark with white shopping bag owl mascot</desc>
+  <!-- Shopping Bag Body -->
+  <path d="M156 155 C156 139 168 127 184 127 H328 C344 127 356 139 356 155 V349 C356 365 344 377 328 377 H184 C168 377 156 365 156 349 V155 Z" fill="#FFFFFF"/>
+  <!-- Bag Handle -->
+  <path d="M206 135 V95 C206 64 229 41 260 41 H252 C283 41 306 64 306 95 V135" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round"/>
+  <!-- Owl Eyes -->
+  <circle cx="210" cy="235" r="44" fill="#FFFFFF" stroke="#22C55E" stroke-width="12"/>
+  <circle cx="302" cy="235" r="44" fill="#FFFFFF" stroke="#22C55E" stroke-width="12"/>
+  <circle cx="214" cy="235" r="18" fill="#111827"/>
+  <circle cx="298" cy="235" r="18" fill="#111827"/>
+  <circle cx="220" cy="229" r="6" fill="#FFFFFF"/>
+  <circle cx="304" cy="229" r="6" fill="#FFFFFF"/>
+  <!-- Owl Beak -->
+  <path d="M256 272 L234 306 L256 292 L278 306 Z" fill="#FBBF24"/>
+  <!-- Smile -->
+  <path d="M220 330 Q256 356 292 330" stroke="#111827" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Wordmark -->
+  <text x="256" y="430" text-anchor="middle" font-family="'Nunito', 'Arial Rounded MT Bold', 'Arial', sans-serif" font-size="72" font-weight="700" fill="#FFFFFF">Huhu</text>
+</svg>

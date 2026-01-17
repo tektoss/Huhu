@@ -9,7 +9,7 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Sell Ghana - Buy and Sell in Ghana",
+  title: "Huhu - Buy and Sell in Ghana",
   description: "Ghana's marketplace for buying and selling anything",
     generator: 'v0.dev'
 }

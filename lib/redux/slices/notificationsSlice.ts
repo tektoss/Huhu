@@ -41,7 +41,7 @@ const initialState: NotificationsState = {
     {
       id: "3",
       type: "system",
-      title: "Welcome to Sell Ghana!",
+      title: "Welcome to Huhu!",
       description: "Thank you for joining our marketplace.",
       time: "1 day ago",
       read: true,

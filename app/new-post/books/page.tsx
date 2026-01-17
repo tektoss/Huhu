@@ -327,42 +327,47 @@ export default function BookForm() {
       const bookData = {
         id: productId,
         name: formData.name,
-        price: Number(formData.price),
+        price: formData.price,
+        mainCategory: "Books",
+        category: "books",
         location: {
-          region: formData.region,
-          suburb: formData.suburb,
+          state: formData.region,
+          town: formData.suburb,
+          country: "Ghana",
+          coordinates: {
+            latitude: 0,
+            longitude: 0,
+          },
+          locationIsSet: false,
         },
-        description: formData.description,
+        details: formData.description,
         images: uploadedImages,
-        imagesData,
-        createdAt: serverTimestamp(),
         authors: formData.authors,
         publisher: formData.publisher,
         datePublished: formData.datePublished,
         isbn: formData.isbn,
         genre: formData.genre,
         language: formData.language,
-        pages: Number(formData.pages),
+        pages: formData.pages,
         format: formData.format,
-        category: "books",
+        itemType: "others",
+        isPromoted: false,
+        status: "active",
+        postedFrom: "Web",
         viewCount: [],
-        promotion: {
-          isPromoted: false,
-          datePromoted:"",
-          dateOfExpiry:"",
-          promoType: ""
-        },
+        datePosted: serverTimestamp(),
+        lastEdited: serverTimestamp(),
         vendor:{
           uid: user?.uid || "",   
-          image: user?.photoURL || "",
-          name: user?.displayName || "", 
+          photoUrl: user?.photoURL || "",
+          displayName: user?.displayName || "", 
         },
       }
 
       // In a real app, you would submit this data to your backend
       console.log("Form submitted:", bookData)
 
-      await setDoc(doc(db, "productListing", productId), bookData);
+      await setDoc(doc(db, "products", productId), bookData);
       
       // Show the submitted data
       setSubmittedData(bookData)

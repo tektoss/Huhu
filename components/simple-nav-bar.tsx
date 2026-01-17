@@ -5,7 +5,7 @@ export default function SimpleNavBar() {
     <nav className="bg-white border-b shadow-sm">
       <div className="container flex items-center h-16 px-4 mx-auto">
         <Link href="/" className="text-xl font-bold">
-          Sell Ghana
+          Huhu
         </Link>
       </div>
     </nav>
