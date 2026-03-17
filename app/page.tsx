@@ -1,30 +1,16 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef } from "react"
 import Link from "next/link"
-import { ArrowUp, Scale } from "lucide-react"
 import ProductCard from "@/components/product-card"
 import NavBar from "@/components/nav-bar"
-import { Smartphone, Car, Shirt, HomeIcon, Sofa, Dumbbell, Gamepad2, BookOpen, Briefcase, Wrench, Key } from "lucide-react"
+import { Smartphone, Car, Shirt, HomeIcon, Sofa, Dumbbell, Gamepad2, BookOpen, Briefcase, Wrench, ArrowRight } from "lucide-react"
 import SoapDispenser from '@/components/icons/soap-dispenser-droplet.svg';
 import { useProducts } from "@/hooks/use-products"
-import { useAuthUser } from "@/lib/auth/hooks/useAuthUser"
-import { useRouter } from "next/navigation"
 
 export default function Home() {
-  const {user, loading: authLoading } = useAuthUser();
-  const route = useRouter();
-  console.log("profile auth---->", user);
-
-  // const [showScrollTop, setShowScrollTop] = useState(false)
-  const [mouseOver, setMouseOver] = useState(false)
   const featuredRef = useRef<HTMLDivElement>(null)
   const { products, loading } = useProducts();
-  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
-
-  // Get trending and new products
-  const trendingProducts = products.filter((p) => p.tag === "Trending").slice(0, 4)
-  const newProducts = products.filter((p, index) => index < 4) // Just using the first 4 for demo
 
   // Handle scroll to featured products
   const scrollToFeatured = () => {
@@ -56,77 +42,85 @@ export default function Home() {
       <NavBar />
 
       {/* Hero Section */}
-      <section 
-        className="bg-cover bg-center relative h-[400px] bg-gray-100"
+      <section
+        className="relative bg-cover bg-center h-[430px] overflow-hidden"
         style={{ backgroundImage: "url('/pattern_bg.jpg')" }}
       >
-        <div className="container flex flex-col items-center justify-center h-full px-4 mx-auto text-center">
-          <h1 className="mb-4 text-4xl font-bold md:text-5xl">Discover Ghana's Marketplace</h1>
-          <p className="mb-2 text-lg text-gray-600">Buy and sell anything across Ghana</p>
-          <p className="mb-6 text-sm text-gray-500">Find jobs, hire services, discover properties & products</p>
-          <div className="flex flex-wrap justify-center gap-4 mb-6">
-            <button onClick={scrollToFeatured} className="px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light">
+        {/* gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-secondary/60" />
+        <div className="relative container flex flex-col items-center justify-center h-full px-4 mx-auto text-center">
+          <span className="mb-3 px-3 py-1 text-xs font-semibold tracking-widest uppercase rounded-full bg-secondary text-primary">
+            Ghana&apos;s #1 Marketplace
+          </span>
+          <h1 className="mb-3 text-4xl font-extrabold text-white md:text-5xl drop-shadow-md">
+            Discover Ghana&apos;s Marketplace
+          </h1>
+          <p className="mb-6 text-base text-white/80 max-w-md">
+            Buy &amp; sell cars, phones, fashion, properties, jobs and services — all in one place.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              onClick={scrollToFeatured}
+              className="px-6 py-3 font-semibold text-primary bg-secondary rounded-md hover:bg-secondary-light transition-colors"
+            >
               Shop Now
             </button>
-            <Link href="/jobs" className="px-6 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700">
+            <Link href="/jobs" className="px-6 py-3 font-semibold text-white border-2 border-white rounded-md hover:bg-white/10 transition-colors">
               Find Jobs
             </Link>
-            <Link href="/services" className="px-6 py-3 text-white bg-green-600 rounded-md hover:bg-green-700">
+            <Link href="/services" className="px-6 py-3 font-semibold text-white border-2 border-white rounded-md hover:bg-white/10 transition-colors">
               Hire Services
             </Link>
-            <Link href="/properties" className="px-6 py-3 text-white bg-amber-600 rounded-md hover:bg-amber-700">
-              Lease
+            <Link href="/properties" className="px-6 py-3 font-semibold text-white border-2 border-white rounded-md hover:bg-white/10 transition-colors">
+              Properties
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Trending and New Products Sections */}
-      <section className="py-12 bg-white">
+      {/* Promo Cards */}
+      <section className="py-10 bg-white">
         <div className="container px-4 mx-auto">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Trending Products */}
-            <div 
-              className="bg-cover bg-center p-6 border border-slate-300 bg-gray-100 rounded-lg shadow-sm"
-              // style={{ backgroundImage: "url('/pattern_bg.jpg')" }}
-            >
-              <h2 className="mb-4 text-2xl font-bold">Find Jobs</h2>
-              <p className="mb-6 text-gray-600">Find your next job opportunity right here today.</p>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {/* Jobs */}
+            <div className="relative overflow-hidden rounded-xl bg-primary p-6 text-white shadow-md">
+              <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/10" />
+              <Briefcase className="w-8 h-8 mb-3 text-secondary" />
+              <h2 className="mb-2 text-xl font-bold">Find Jobs</h2>
+              <p className="mb-5 text-sm text-white/75">Explore hundreds of job opportunities across Ghana today.</p>
               <Link
                 href="/jobs"
-                className="inline-block px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light"
+                className="inline-flex items-center gap-1 px-5 py-2 font-semibold text-primary bg-secondary rounded-md hover:bg-secondary-light transition-colors text-sm"
               >
-                View Jobs
+                View Jobs <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
             {/* New Products */}
-            <div 
-              className="bg-cover bg-center border border-slate-300 p-6 bg-gray-100 rounded-lg shadow-sm"
-              // style={{ backgroundImage: "url('/pattern_bg.jpg')" }}
-            >
-              <h2 className="mb-4 text-2xl font-bold">New Products</h2>
-              <p className="mb-6 text-gray-600">Be the first to discover fresh listings</p>
+            <div className="relative overflow-hidden rounded-xl bg-secondary p-6 text-primary shadow-md">
+              <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-primary/10" />
+              <Smartphone className="w-8 h-8 mb-3 text-primary" />
+              <h2 className="mb-2 text-xl font-bold">New Arrivals</h2>
+              <p className="mb-5 text-sm text-primary/70">Be the first to discover the freshest listings on Huhu.</p>
               <Link
                 href="/category/new"
-                className="inline-block px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light"
+                className="inline-flex items-center gap-1 px-5 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-light transition-colors text-sm"
               >
-                View New Arrivals
+                Browse New <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
             {/* Services */}
-            <div 
-              className="bg-cover bg-center border border-slate-300 p-6 bg-gray-100 rounded-lg shadow-sm"
-              // style={{ backgroundImage: "url('/pattern_bg.jpg')" }}
-            >
-              <h2 className="mb-4 text-2xl font-bold">Hire Services</h2>
-              <p className="mb-6 text-gray-600">Connect with skilled service providers in Ghana</p>
+            <div className="relative overflow-hidden rounded-xl bg-primary-alt border border-primary/20 p-6 text-primary shadow-md">
+              <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-primary/10" />
+              <Wrench className="w-8 h-8 mb-3 text-primary" />
+              <h2 className="mb-2 text-xl font-bold">Hire Services</h2>
+              <p className="mb-5 text-sm text-primary/70">Connect with skilled service providers across Ghana.</p>
               <Link
                 href="/services"
-                className="inline-block px-6 py-3 text-white bg-primary rounded-md hover:bg-primary-light"
+                className="inline-flex items-center gap-1 px-5 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-light transition-colors text-sm"
               >
-                Browse Services
+                Browse Services <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -198,84 +192,28 @@ export default function Home() {
       {/* Categories */}
       <section className="py-8 bg-gray-50">
         <div className="container px-4 mx-auto">
-          <h2 className="mb-6 text-2xl font-bold">Categories</h2>
-          <div className="grid grid-cols-3 gap-4 md:grid-cols-5 lg:grid-cols-10">
-            <Link href="/category/electronics" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Smartphone className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Electronics</span>
-            </Link>
-
-            <Link href="/category/vehicles" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Car className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Vehicles</span>
-            </Link>
-
-            <Link href="/category/fashion" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Shirt className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Fashion</span>
-            </Link>
-
-            <Link href="/category/cosmetics" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <SoapDispenser className="text-gray-700 scale-125" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Cosmetics</span>
-            </Link>
-
-            <Link href="/category/furniture" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Sofa className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Furniture</span>
-            </Link>
-
-            <Link href="/category/fitness" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Dumbbell className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Fitness</span>
-            </Link>
-
-            <Link href="/category/gaming" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Gamepad2 className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Gaming</span>
-            </Link>
-
-            <Link href="/properties" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <HomeIcon className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Property</span>
-            </Link>
-
-            <Link href="/category/books" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <BookOpen className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Books</span>
-            </Link>
-
-            <Link href="/jobs" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Briefcase className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Jobs</span>
-            </Link>
-
-            <Link href="/services" className="flex flex-col items-center">
-              <div className="flex items-center justify-center w-16 h-16 mb-2 bg-white border rounded-lg shadow-sm hover:border-primary">
-                <Wrench className="w-8 h-8 text-gray-700" />
-              </div>
-              <span className="text-xs text-center font-semibold text-gray-600">Services</span>
-            </Link>
+          <h2 className="mb-6 text-2xl font-bold">Browse by Category</h2>
+          <div className="grid grid-cols-3 gap-4 md:grid-cols-5 lg:grid-cols-11">
+            {[
+              { href: "/category/electronics", icon: <Smartphone className="w-7 h-7" />, label: "Electronics" },
+              { href: "/category/vehicles", icon: <Car className="w-7 h-7" />, label: "Vehicles" },
+              { href: "/category/fashion", icon: <Shirt className="w-7 h-7" />, label: "Fashion" },
+              { href: "/category/cosmetics", icon: <SoapDispenser className="scale-110" />, label: "Cosmetics" },
+              { href: "/category/furniture", icon: <Sofa className="w-7 h-7" />, label: "Furniture" },
+              { href: "/category/fitness", icon: <Dumbbell className="w-7 h-7" />, label: "Fitness" },
+              { href: "/category/gaming", icon: <Gamepad2 className="w-7 h-7" />, label: "Gaming" },
+              { href: "/properties", icon: <HomeIcon className="w-7 h-7" />, label: "Property" },
+              { href: "/category/books", icon: <BookOpen className="w-7 h-7" />, label: "Books" },
+              { href: "/jobs", icon: <Briefcase className="w-7 h-7" />, label: "Jobs" },
+              { href: "/services", icon: <Wrench className="w-7 h-7" />, label: "Services" },
+            ].map(({ href, icon, label }) => (
+              <Link key={href} href={href} className="group flex flex-col items-center gap-1">
+                <div className="flex items-center justify-center w-16 h-16 bg-white border border-gray-200 rounded-xl shadow-sm transition-all group-hover:border-primary group-hover:bg-primary/5 group-hover:shadow-md text-gray-600 group-hover:text-primary">
+                  {icon}
+                </div>
+                <span className="text-xs text-center font-semibold text-gray-600 group-hover:text-primary transition-colors">{label}</span>
+              </Link>
+            ))}
 
           </div>
         </div>
@@ -285,7 +223,12 @@ export default function Home() {
       {/* Featured Products */}
       <section ref={featuredRef} className="py-8 bg-white">
         <div className="container px-4 mx-auto">
-          <h2 className="mb-6 text-2xl font-bold">Featured Products</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Featured Products</h2>
+            <Link href="/category/all" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+              View all <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
 
           {loading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
@@ -311,49 +254,39 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="pt-8 bg-gray-800 text-white">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3 px-4">
-            <div>
-              <h3 className="mb-4 text-lg font-bold">Huhu</h3>
-              <p className="text-gray-400">Your marketplace for everything Ghanaian.</p>
+      <footer className="pt-10 bg-gray-900 text-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <h3 className="mb-3 text-xl font-extrabold tracking-tight">Huhu</h3>
+              <p className="text-gray-400 text-sm max-w-xs">
+                Ghana&apos;s largest online marketplace. Buy and sell cars, phones, fashions, properties, jobs and services.
+              </p>
             </div>
             <div>
-              <h3 className="mb-4 text-lg font-bold">Quick Links</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <Link href="/about" className="hover:text-white">
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="hover:text-white">
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/faq" className="hover:text-white">
-                    FAQ
-                  </Link>
-                </li>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Company</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Legal</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/jobs" className="hover:text-white transition-colors">Jobs</Link></li>
+                <li><Link href="/services" className="hover:text-white transition-colors">Services</Link></li>
               </ul>
             </div>
           </div>
-          <div className="py-5 mt-8 text-center text-gray-400 border-t border-gray-700">
-            &copy; {new Date().getFullYear()} Huhu. All rights reserved.
+          <div className="py-6 mt-8 flex flex-col md:flex-row items-center justify-between border-t border-gray-700 text-sm text-gray-500">
+            <span>&copy; {new Date().getFullYear()} Huhu Ghana. All rights reserved.</span>
+            <span className="mt-2 md:mt-0">Made with ❤️ in Ghana</span>
           </div>
         </div>
       </footer>
 
-      {/* Scroll to top button */}
-      {/* <button
-        onClick={scrollToTop}
-        className={`fixed bottom-6 right-6 p-3 bg-primary text-white rounded-full shadow-lg transition-all duration-300 ${
-          showScrollTop ? "translate-x-0 opacity-100" : "translate-x-16 opacity-0"
-        }`}
-      >
-        <ArrowUp className="w-6 h-6" />
-      </button> */}
     </main>
   )
 }

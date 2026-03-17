@@ -45,7 +45,7 @@ export default function NotificationsPage() {
 
           {/* Notifications List */}
           <div className="overflow-hidden bg-white rounded-lg shadow">
-            {/* {notifications.map((notification) => (
+            {notifications.map((notification) => (
               <Link
                 key={notification.id}
                 href={`/notifications/${notification.id}`}
@@ -53,7 +53,7 @@ export default function NotificationsPage() {
               >
                 <div className="relative flex-shrink-0 mr-4">
                   <div className="relative w-10 h-10 overflow-hidden rounded-full">
-                    <Image src={notification.image || "/user_placeholder.png"} alt="" fill className="object-cover" />
+                    <Image src={notification.image || "/user_placeholder.png"} alt="Notification sender" fill className="object-cover" />
                   </div>
                   {!notification.read && (
                     <span className="absolute top-0 right-0 w-3 h-3 bg-blue-500 border-2 border-white rounded-full"></span>
@@ -65,9 +65,9 @@ export default function NotificationsPage() {
                   <p className="mt-1 text-xs text-gray-500">{notification.time}</p>
                 </div>
               </Link>
-            ))} */}
+            ))}
 
-            {notifications.length === 0 || true && (
+            {notifications.length === 0 && (
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <div className="p-3 mb-4 bg-gray-100 rounded-full">
                   <Bell className="w-8 h-8 text-gray-400" />

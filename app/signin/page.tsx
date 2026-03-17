@@ -7,7 +7,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { Eye, EyeOff } from "lucide-react"
 import NavBar from "@/components/nav-bar"
-import { signInWithGoogle } from "@/utils/googleSignin"
 import { signInWithEmail } from "@/utils/signinUser"
 import { showToast } from "@/utils/showToast"
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth"
@@ -34,37 +33,7 @@ export default function SignInPage() {
 
   const handleChange = ({name, value}: {name: string, value: string}) => {
     setFormData({...formData, [name]: value});
-    console.log("form data", formData);
   }
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault()
-  //   setError("")
-
-  //   try {
-  //       setLoading(true);
-  //       const {email, password} = formData;
-  //       await signInWithEmail(email, password);
-  //       console.log("user signed up successfully");
-  //       setLoading(false);
-  //     } catch (err) {
-  //       setLoading(false);
-  //       if (err instanceof Error) {
-  //         setError(err.message);
-  //         console.error(err);
-  //       } else {
-  //       setError("An unknown error occurred.");
-  //       console.error("Unknown error", err);
-  //     }
-  //   }
-  // }
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault()
-  //   setError("")
-
-    
-  // }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,9 +42,6 @@ export default function SignInPage() {
     const { email, password } = formData;
 
     try {
-      // 1. Check if email exists from server
-      console.log("check if email exists from server", email);
-      
       const res = await fetch("/api/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,8 +97,6 @@ export default function SignInPage() {
       showToast("Google sign-in successful!", "success");
       router.push("/");
     } catch (error: any) {
-      console.log("we out here!!!");
-      
       showToast((error.message || "Google sign-in failed"), "error");
     }
   }

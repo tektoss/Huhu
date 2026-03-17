@@ -14,8 +14,7 @@ import { logout } from "@/lib/auth/utils/logout"
 
 
 export default function NavBar() {
-  const {user, loading: authLoading } = useAuthUser();
-  console.log("profile auth---->", user);
+  const { user } = useAuthUser();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -26,8 +25,9 @@ export default function NavBar() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    router.push(`/category/${searchQuery}`)
+    const term = searchQuery.trim()
+    if (!term) return
+    router.push(`/category/${encodeURIComponent(term)}`)
   }
 
   // Close mobile menu when clicking outside

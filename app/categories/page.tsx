@@ -21,7 +21,7 @@ export default function CategoriesPage() {
               {categories.map((category) => (
                 <Link
                   key={category.id}
-                  href={`/new-post//${category.id}`}
+                  href={`/new-post/${category.id}`}
                   className="flex items-center p-4 transition-colors bg-white border rounded-lg shadow-sm hover:border-primary"
                 >
                   <div className="p-3 mr-4 text-primary bg-primary-alt rounded-full">

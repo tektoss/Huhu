@@ -1,13 +1,11 @@
 "use client"
 
 import type React from "react"
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Heart } from "lucide-react"
 import type { FirebaseProduct } from "@/lib/firebase/firestore"
-import { db } from "@/lib/firebase/firebase"
 import { showToast } from '@/utils/showToast';
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuthUser } from "@/lib/auth/hooks/useAuthUser";
@@ -23,8 +21,7 @@ export default function ProductCard({ product }: { product: FirebaseProduct}) {
     e.stopPropagation()
 
     if (!user) {
-      // Redirect to sign in or show sign in modal
-      alert("Please sign in to add items to your wishlist")
+      showToast("Please sign in to add items to your wishlist", "error")
       return
     }
 

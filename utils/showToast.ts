@@ -26,15 +26,11 @@ export const showToast = (message: string, type: 'success' | 'error' | 'default'
     toastId: 'custom-id-yes'
   }  
 
-  if(type === 'success'){
+  if (type === 'success') {
     toast.success(message, toastProperties);
-  }
-
-  if(type === 'error'){
+  } else if (type === 'error') {
     toast.error(message, toastProperties);
-  }
-   
-  else{
+  } else {
     toast(message, toastProperties);
-  }   
+  }
 }
