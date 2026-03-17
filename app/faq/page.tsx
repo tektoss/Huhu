@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import NavBar from "@/components/nav-bar"
 import SimpleFooter from "@/components/simple-footer"
 import {
@@ -7,9 +8,19 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 
-export const metadata = {
-  title: "FAQ | Huhu",
-  description: "Frequently asked questions about buying and selling on Huhu.",
+export const metadata: Metadata = {
+  title: "Frequently Asked Questions | Huhu Ghana",
+  description: "Find answers to common questions about buying and selling on Huhu Ghana. Learn about listings, payments, safety, and how to get started.",
+  keywords: ["Huhu FAQ", "how to sell Ghana", "how to buy Ghana", "Huhu help", "marketplace questions Ghana"],
+  openGraph: {
+    title: "FAQ — Huhu Ghana",
+    description: "Find answers to common questions about buying and selling on Huhu Ghana.",
+    url: "https://www.shops-huhu.com/faq",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://www.shops-huhu.com/faq",
+  },
 }
 
 const faqCategories = [

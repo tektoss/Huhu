@@ -19,6 +19,7 @@ Disallow: /edit-product
 # Allow search engines to crawl important pages
 Allow: /
 Allow: /categories
+Allow: /category/*
 Allow: /jobs
 Allow: /properties
 Allow: /services
@@ -28,6 +29,12 @@ Allow: /property/*
 Allow: /service/*
 Allow: /profile/*
 Allow: /search/*
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /privacy
+
+Sitemap: https://www.shops-huhu.com/sitemap.xml
 Allow: /category/*
 
 # Sitemap

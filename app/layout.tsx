@@ -76,7 +76,8 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code", // Replace with actual code
+    // Add your actual Google Search Console verification code here
+    // google: "your-actual-verification-code",
   },
   alternates: {
     canonical: "https://www.shops-huhu.com",
@@ -124,13 +125,31 @@ export default function RootLayout({
     }
   };
 
+  const localBusinessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "OnlineStore",
+    "name": "Huhu Ghana",
+    "url": "https://www.shops-huhu.com",
+    "logo": "https://www.shops-huhu.com/huhu-logo-dark.svg",
+    "description": "Ghana's largest online marketplace for buying and selling.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "GH"
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Ghana"
+    },
+    "priceRange": "Free"
+  };
+
   return (
-    <html lang="en">
+    <html lang="en-GH">
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#7C3AED" />
+        <meta name="theme-color" content="#511989" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -138,6 +157,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
         />
       </head>
       <body className={inter.className}>

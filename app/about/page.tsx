@@ -1,10 +1,26 @@
+import type { Metadata } from "next"
 import NavBar from "@/components/nav-bar"
 import SimpleFooter from "@/components/simple-footer"
 import { Building2, Users, ShieldCheck, Globe } from "lucide-react"
 
-export const metadata = {
-  title: "About Us | Huhu",
-  description: "Learn more about Huhu - Ghana's leading online marketplace for buying and selling.",
+export const metadata: Metadata = {
+  title: "About Us | Huhu Ghana",
+  description: "Learn about Huhu — Ghana's largest online marketplace. Our mission is to empower Ghanaians by making buying and selling safe, simple, and accessible.",
+  keywords: ["about Huhu", "Huhu Ghana marketplace", "Ghana online marketplace", "buy sell Ghana"],
+  openGraph: {
+    title: "About Huhu — Ghana's #1 Online Marketplace",
+    description: "Learn about Huhu — Ghana's largest online marketplace connecting buyers and sellers across Accra, Kumasi, and all regions.",
+    url: "https://www.shops-huhu.com/about",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "About Huhu Ghana",
+    description: "Learn about Huhu — Ghana's largest online marketplace.",
+  },
+  alternates: {
+    canonical: "https://www.shops-huhu.com/about",
+  },
 }
 
 export default function AboutPage() {

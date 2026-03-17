@@ -1,9 +1,23 @@
+import type { Metadata } from "next"
 import NavBar from "@/components/nav-bar"
 import SimpleFooter from "@/components/simple-footer"
 
-export const metadata = {
-  title: "Privacy Policy | Huhu",
-  description: "Read our privacy policy to understand how Huhu collects, uses, and protects your personal information.",
+export const metadata: Metadata = {
+  title: "Privacy Policy | Huhu Ghana",
+  description: "Read Huhu Ghana's privacy policy to understand how we collect, use, and protect your personal information when you use our marketplace.",
+  openGraph: {
+    title: "Privacy Policy | Huhu Ghana",
+    description: "How Huhu Ghana collects, uses, and protects your personal information.",
+    url: "https://www.shops-huhu.com/privacy",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://www.shops-huhu.com/privacy",
+  },
+  robots: {
+    index: true,
+    follow: false,
+  },
 }
 
 export default function PrivacyPage() {
