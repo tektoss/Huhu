@@ -39,6 +39,7 @@ interface PropertyFormData {
   propertyAmenities: string[]
   lifestyles: string[]
   images: File[]
+  videos: File[]
 }
 
 const propertyTypesOptions = ["Apartment", "House", "Flat", "Duplex", "Bungalow", "Studio", "Land", "Office", "Shop"]
@@ -86,6 +87,7 @@ export default function NewPropertyPage() {
 
   const [loading, setLoading] = useState(false)
   const [imagePreview, setImagePreview] = useState<string[]>([])
+  const [videoPreview, setVideoPreview] = useState<string[]>([])
   
   const [formData, setFormData] = useState<PropertyFormData>({
     propertyTypes: "",
@@ -103,11 +105,12 @@ export default function NewPropertyPage() {
     propertyAmenities: [],
     lifestyles: [],
     images: [],
+    videos: [],
   })
 
   // Load property data if in edit mode
   useEffect(() => {
-    if (isEditMode && propertyId) {
+    if (isEditMode && propertyId && user) {
       const loadProperty = async () => {
         try {
           const docRef = doc(db, "Roommate", propertyId)
@@ -115,8 +118,11 @@ export default function NewPropertyPage() {
           
           if (docSnap.exists()) {
             const data = docSnap.data()
-            // Only allow owner to edit
-            if (data.vendor?.email !== user?.email) {
+            // Only allow owner to edit — check uid first, fall back to email
+            const isOwner =
+              (user.uid && data.vendor?.uid && user.uid === data.vendor.uid) ||
+              (user.email && data.vendor?.email && user.email === data.vendor.email)
+            if (!isOwner) {
               showToast("You can only edit your own properties", "error")
               router.back()
               return
@@ -135,11 +141,16 @@ export default function NewPropertyPage() {
               propertyAmenities: data.propertyAmenities || [],
               lifestyles: data.lifestyles || [],
               images: [],
+              videos: [],
             })
             
             // Show existing images as preview
             if (data.images && Array.isArray(data.images)) {
               setImagePreview(data.images)
+            }
+            // Show existing videos as preview
+            if (data.videos && Array.isArray(data.videos)) {
+              setVideoPreview(data.videos)
             }
           }
         } catch (error) {
@@ -239,6 +250,59 @@ export default function NewPropertyPage() {
     setImagePreview((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files)
+      const maxSize = 200 * 1024 * 1024 // 200MB per video
+      const allowedTypes = ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm", "video/ogg"]
+
+      const validFiles = files.filter((file) => {
+        if (!allowedTypes.includes(file.type) && !file.type.startsWith("video/")) {
+          showToast(`${file.name} is not a supported video format.`, "error")
+          return false
+        }
+        if (file.size > maxSize) {
+          showToast(`${file.name} is too large. Max 200MB per video.`, "error")
+          return false
+        }
+        return true
+      })
+
+      // Reset input so the same file can be re-selected if needed
+      e.target.value = ""
+
+      // Count total (existing URLs in preview + new files already queued + incoming)
+      if (videoPreview.length + validFiles.length > 3) {
+        showToast("Maximum 3 videos allowed", "error")
+        return
+      }
+
+      setFormData((prev) => ({ ...prev, videos: [...prev.videos, ...validFiles] }))
+
+      validFiles.forEach((file) => {
+        const url = URL.createObjectURL(file)
+        setVideoPreview((prev) => [...prev, url])
+      })
+    }
+  }
+
+  const removeVideo = (index: number) => {
+    const preview = videoPreview[index]
+    if (preview && !preview.startsWith("http")) {
+      // It's a new file (blob URL) — find its slot in formData.videos
+      const blobPreviews = videoPreview.filter((v) => !v.startsWith("http"))
+      const blobIndex = blobPreviews.indexOf(preview)
+      if (blobIndex !== -1) {
+        setFormData((prev) => ({
+          ...prev,
+          videos: prev.videos.filter((_, i) => i !== blobIndex),
+        }))
+      }
+    }
+    // Existing URL entries are not in formData.videos, just remove from preview
+    setVideoPreview((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
@@ -262,10 +326,26 @@ export default function NewPropertyPage() {
         }
       }
 
+      // Upload new videos
+      let videoUrls: string[] = []
+      for (const video of formData.videos) {
+        if (video instanceof File) {
+          const storageRef = ref(storage, `properties/videos/${Date.now()}_${video.name}`)
+          const snapshot = await uploadBytes(storageRef, video)
+          const url = await getDownloadURL(snapshot.ref)
+          videoUrls.push(url)
+        }
+      }
+
       // Include existing preview images (URLs from edit mode)
       const allImageUrls = [
         ...imagePreview.filter((img) => img.startsWith("http")), // Existing URLs
         ...imageUrls, // New uploads
+      ]
+
+      const allVideoUrls = [
+        ...videoPreview.filter((v) => v.startsWith("http")), // Existing URLs
+        ...videoUrls, // New uploads
       ]
 
       // Prepare document
@@ -289,8 +369,10 @@ export default function NewPropertyPage() {
         lifestyles: formData.lifestyles,
         images: allImageUrls,
         image: allImageUrls[0] || "", // Legacy field
+        videos: allVideoUrls,
         status: "active",
         vendor: {
+          uid: user?.uid || "",
           firstName: user?.displayName?.split(" ")[0] || "",
           lastName: user?.displayName?.split(" ")[1] || "",
           businessName: "",
@@ -529,7 +611,7 @@ export default function NewPropertyPage() {
                   <div className="flex flex-col items-center">
                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                     <span className="text-sm text-gray-600">Click to upload or drag and drop</span>
-                    <span className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</span>
+                    <span className="text-xs text-gray-500">PNG, JPG, WEBP up to 5MB</span>
                   </div>
                   <input
                     type="file"
@@ -554,6 +636,50 @@ export default function NewPropertyPage() {
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Video Upload */}
+            <div>
+              <label className="block mb-2 font-semibold">
+                Property Videos (Max 3, up to 200MB each)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <label className="cursor-pointer">
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-600">Click to upload videos</span>
+                    <span className="text-xs text-gray-500">MP4, MOV, AVI, WebM up to 200MB</span>
+                  </div>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleVideoSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Video Preview */}
+              {videoPreview.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
+                  {videoPreview.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <video
+                        src={preview}
+                        controls
+                        className="w-full rounded-lg max-h-48"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeVideo(index)}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                       >
                         <X className="w-4 h-4" />

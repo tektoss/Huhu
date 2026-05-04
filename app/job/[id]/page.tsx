@@ -309,7 +309,7 @@ export default function JobPage() {
   const handleShare = () => {
     if (job) {
       const jobUrl = `${window.location.origin}/job/${job.id}`
-      dispatch(openShareModal({ productId: job.id, productUrl: jobUrl }))
+      dispatch(openShareModal({ productId: job.id, productUrl: jobUrl, productTitle: (job as any).title || (job as any).jobTitle || "Job Listing" }))
     }
   }
 

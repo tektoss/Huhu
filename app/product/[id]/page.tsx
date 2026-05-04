@@ -321,7 +321,7 @@ export default function ProductPage() {
   const handleShare = () => {
     if (product) {
       const productUrl = `${window.location.origin}/product/${product.id}`
-      dispatch(openShareModal({ productId: product.id, productUrl }))
+      dispatch(openShareModal({ productId: product.id, productUrl, productTitle: product.name }))
     }
   }
 

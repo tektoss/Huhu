@@ -12,7 +12,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage"
 import { logout } from "@/lib/auth/utils/logout"
 import { useParams, useRouter } from "next/navigation"
 // import { getActiveResourcesInfo } from "node:process"
-import { getUserData, getUserJobs, getUserListings, jobListing } from "@/utils/dataFetch"
+import { getUserData, getUserJobs, getUserListings, getUserProperties, jobListing, PropertyListing } from "@/utils/dataFetch"
 import { FirebaseProduct } from "@/lib/firebase/firestore"
 import LoadingSpinner from "@/components/loading-spinner"
 import { formatDistanceToNow } from 'date-fns';
@@ -33,6 +33,7 @@ export default function ProfilePage() {
   const [] = useState()
   const [listings, setListings] = useState<FirebaseProduct[]>([]);
   const [jobs, setJobs] = useState<jobListing[]>([]);
+  const [properties, setProperties] = useState<PropertyListing[]>([]);
   const [time, setTime] = useState(Date.now());
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [imageData, setImageData] = useState<{url?:string, path?:string, name?:string, size?:number, type?:string} | null>({url:'', path:'', name: '', size: 0, type: ''});
@@ -60,7 +61,7 @@ export default function ProfilePage() {
   })
 
   const [showEditModal, setShowEditModal] = useState(false)
-  const [tab, setTab] = useState< "products" | "jobs" >("products")
+  const [tab, setTab] = useState<"products" | "jobs" | "properties">("products")
 
   const locationText = [formData?.location?.region, formData?.location?.suburb].filter(Boolean).join(", ")
   const hasEmail = typeof formData?.email === "string" && formData.email.trim().length > 0 && formData.email.toLowerCase() !== "unknown"
@@ -123,10 +124,13 @@ export default function ProfilePage() {
     }
 
     const listing = await getUserListings(id);
-    const jobs = await getUserJobs(id) 
+    const jobs = await getUserJobs(id);
+    const userEmail = userData?.email || (user?.uid === id ? user?.email : undefined) || undefined;
+    const props = await getUserProperties(id, userEmail);
 
     setJobs(jobs);
     setListings(listing);
+    setProperties(props);
     setLoading(false);
   }
 
@@ -331,6 +335,10 @@ export default function ProfilePage() {
                       <p className="font-bold">{isNaN(jobs?.length) ? "N/A" : jobs.length}</p>
                       <p className="text-sm text-gray-600">Job Posts</p>
                     </div>
+                    <div className="text-center">
+                      <p className="font-bold">{isNaN(properties?.length) ? "N/A" : properties.length}</p>
+                      <p className="text-sm text-gray-600">Properties</p>
+                    </div>
                     {/* <div className="text-center">
                       <p className="font-bold">156</p>
                       <p className="text-sm text-gray-600">Followers</p>
@@ -370,21 +378,12 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Profile Tabs */}
-            {user?.uid === id && (
+            {/* Tabs */}
             <div className="mb-6 overflow-x-auto border-b">
               <div className="flex space-x-8">
-                <button onClick={() => setTab("products")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "products" ? "border-b-2 border-primary" : ""}`}>Products</button>
-                <button onClick={() => setTab("jobs")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "jobs" ? "border-b-2 border-primary" : ""}`}>Jobs</button>
-              </div>
-            </div>
-            )}
-
-            {/* Products and Jobs */}
-            <div className="mb-6 overflow-x-auto border-b">
-              <div className="flex space-x-8">
-                <button onClick={() => setTab("products")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "products" ? "border-b-2 border-primary" : ""}`}>Products</button>
-                <button onClick={() => setTab("jobs")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "jobs" ? "border-b-2 border-primary" : ""}`}>Jobs</button>
+                <button onClick={() => setTab("products")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "products" ? "border-b-2 border-primary" : "border-transparent"}`}>Products</button>
+                <button onClick={() => setTab("jobs")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "jobs" ? "border-b-2 border-primary" : "border-transparent"}`}>Jobs</button>
+                <button onClick={() => setTab("properties")} className={`px-1 py-4 text-sm font-medium border-b-2 hover:border-b-2 hover:border-primary ${tab === "properties" ? "border-b-2 border-primary" : "border-transparent"}`}>Properties</button>
               </div>
             </div>
 
@@ -485,6 +484,46 @@ export default function ProfilePage() {
               ))}
             </div>))
             }
+
+            {tab === "properties" && (properties.length === 0 ? (
+              <div className="container px-4 mx-auto">
+                <div>
+                  <p className="text-lg mb-5">No properties found.</p>
+                  {user?.uid === id && (
+                    <button onClick={() => router.push("/new-post/property")} className="flex items-center rounded text-primary py-2 px-6 border border-primary hover:bg-primary-alt">
+                      <PlusCircle className="w-4 h-4 mr-2 text-primary" />
+                      Post a Property
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                {properties.map((prop) => (
+                  <button
+                    key={prop.id}
+                    className="overflow-hidden bg-white border rounded-lg shadow-sm text-left"
+                    onClick={() => router.push(`/property/${prop.id}`)}
+                  >
+                    <div className="relative aspect-square">
+                      <Image
+                        src={prop.images?.[0] || prop.image || "/property_placeholder.png"}
+                        alt={prop.propertyTypes || "Property"}
+                        fill
+                        className="object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = "/property_placeholder.png" }}
+                      />
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-medium truncate">{prop.propertyTypes || "Property"}</h3>
+                      {prop.rentPrice && <p className="mt-1 font-medium">₵{prop.rentPrice}</p>}
+                      {prop.propertyAddie && <p className="mt-1 text-xs text-gray-500 truncate">{prop.propertyAddie}</p>}
+                      <span className="mt-1 text-xs text-gray-400">{getPostedTimeFromFirestore(prop.createdAt || prop.datePosted)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ))}
 
           </div>
         </div>

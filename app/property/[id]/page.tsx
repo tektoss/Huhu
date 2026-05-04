@@ -11,26 +11,33 @@ import { showToast } from "@/utils/showToast"
 import { getPostedTimeFromFirestore, calculateDistance } from "@/utils/getters"
 import { useWishlist } from "@/hooks/use-wishlist"
 import { useAuthUser } from "@/lib/auth/hooks/useAuthUser"
-import { doc, updateDoc, deleteDoc, increment, collection, query, where, getDocs } from "firebase/firestore"
+import { doc, updateDoc, deleteDoc, increment, collection, query, where, getDocs, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase/firebase"
+import { useAppDispatch } from "@/lib/redux/hooks"
+import { openShareModal } from "@/lib/redux/slices/uiSlice"
 
 export default function PropertyDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuthUser()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+  const dispatch = useAppDispatch()
   const propertyId = params.id as string
 
   const [property, setProperty] = useState<PropertyListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [showShareModal, setShowShareModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [viewCount, setViewCount] = useState(0)
   const [similarProperties, setSimilarProperties] = useState<PropertyListing[]>([])
-  const [isOwner, setIsOwner] = useState(false)
   const [status, setStatus] = useState<string>("available")
+  const [vendorUid, setVendorUid] = useState<string | null>(null)
+
+  const isOwner = !!user && !!property && (
+    (user.uid != null && user.uid === (property.vendor as any)?.uid) ||
+    (user.email != null && user.email === (property.vendor as any)?.email)
+  )
 
   const images = property?.images || (property?.image ? [property.image] : [])
 
@@ -43,7 +50,16 @@ export default function PropertyDetailPage() {
         setIsSaved(isInWishlist(propertyId))
         setViewCount(found.viewCount?.length || 0)
         setStatus(found.status || "available")
-        setIsOwner(found.vendor?.email === user?.email)
+
+        // Resolve vendor uid — stored directly or looked up by email
+        if (found.vendor?.uid) {
+          setVendorUid(found.vendor.uid)
+        } else if (found.vendor?.email) {
+          try {
+            const usersSnap = await getDocs(query(collection(db, "users"), where("email", "==", found.vendor.email)))
+            if (!usersSnap.empty) setVendorUid(usersSnap.docs[0].id)
+          } catch {}
+        }
         
         // Get similar properties (same type, different ID)
         const similar = properties
@@ -51,8 +67,8 @@ export default function PropertyDetailPage() {
           .slice(0, 4)
         setSimilarProperties(similar)
         
-        // Track view count
-        if (user && found.vendor?.email !== user?.email) {
+        // Track view count — don't count owner's own views
+        if (user && (user.uid !== (found.vendor as any)?.uid) && (user.email !== (found.vendor as any)?.email)) {
           trackPropertyView(propertyId, user.email || "")
         }
       } else {
@@ -127,9 +143,10 @@ export default function PropertyDetailPage() {
 
   const handleShare = () => {
     const url = `${window.location.origin}/property/${propertyId}`
-    navigator.clipboard.writeText(url)
-    showToast("Property link copied to clipboard!", "success")
-    setShowShareModal(false)
+    const title = property
+      ? `${property.propertyTypes || "Property"} in ${property.location?.town || "Ghana"} — ₵${property.rentPrice}`
+      : "Property listing on Huhu Ghana"
+    dispatch(openShareModal({ productId: propertyId, productUrl: url, productTitle: title }))
   }
 
   if (loading) {
@@ -265,6 +282,23 @@ export default function PropertyDetailPage() {
               </div>
             )}
 
+            {/* Videos */}
+            {property.videos && property.videos.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-xl font-bold">Videos</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {property.videos.map((videoUrl, index) => (
+                    <video
+                      key={index}
+                      src={videoUrl}
+                      controls
+                      className="w-full rounded-lg max-h-64"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Amenities */}
             {property.propertyAmenities && property.propertyAmenities.length > 0 && (
               <div>
@@ -323,8 +357,14 @@ export default function PropertyDetailPage() {
 
               {property.vendor && (
                 <div className="mb-4">
-                  <p className="font-semibold">{property.vendor.firstName} {property.vendor.lastName}</p>
-                  <p className="text-sm text-gray-600">{property.vendor.businessName}</p>
+                  {vendorUid ? (
+                    <Link href={`/profile/${vendorUid}`} className="hover:underline text-primary font-semibold">
+                      {(property.vendor as any).fullName || `${property.vendor.firstName ?? ""} ${property.vendor.lastName ?? ""}`.trim() || "View Profile"}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold">{(property.vendor as any).fullName || `${property.vendor.firstName ?? ""} ${property.vendor.lastName ?? ""}`.trim()}</p>
+                  )}
+                  <p className="text-sm text-gray-600">{(property.vendor as any).businessName}</p>
                 </div>
               )}
 
@@ -361,23 +401,12 @@ export default function PropertyDetailPage() {
             </button>
 
             <button
-              onClick={() => setShowShareModal(!showShareModal)}
+              onClick={handleShare}
               className="w-full flex items-center justify-center px-4 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300"
             >
               <Share2 className="w-5 h-5 mr-2" />
               Share
             </button>
-
-            {showShareModal && (
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <button
-                  onClick={handleShare}
-                  className="w-full px-3 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700"
-                >
-                  Copy Link
-                </button>
-              </div>
-            )}
 
             <button
               onClick={() => setShowReportModal(!showReportModal)}

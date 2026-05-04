@@ -5,6 +5,7 @@ interface ModalState {
   reportModalOpen: boolean
   currentProductId: string | null
   currentProductUrl: string | null
+  currentProductTitle: string | null
   isDeleteProductModalOpen: boolean
   deleteProductData: { productId: string; productName: string; images?: string[] } | null
 }
@@ -14,6 +15,7 @@ const initialState: ModalState = {
   reportModalOpen: false,
   currentProductId: null,
   currentProductUrl: null,
+  currentProductTitle: null,
   isDeleteProductModalOpen: false,
   deleteProductData: null,
 }
@@ -22,10 +24,11 @@ const uiSlice = createSlice({
   name: "ui",
   initialState,
   reducers: {
-    openShareModal: (state, action: PayloadAction<{ productId: string; productUrl: string }>) => {
+    openShareModal: (state, action: PayloadAction<{ productId: string; productUrl: string; productTitle?: string }>) => {
       state.shareModalOpen = true
       state.currentProductId = action.payload.productId
       state.currentProductUrl = action.payload.productUrl
+      state.currentProductTitle = action.payload.productTitle || null
     },
     closeShareModal: (state) => {
       state.shareModalOpen = false

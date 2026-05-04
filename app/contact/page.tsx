@@ -5,6 +5,8 @@ import NavBar from "@/components/nav-bar"
 import SimpleFooter from "@/components/simple-footer"
 import { Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react"
 import { showToast } from "@/utils/showToast"
+import { collection, addDoc, Timestamp } from "firebase/firestore"
+import { db } from "@/lib/firebase/firebase"
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false)
@@ -32,17 +34,24 @@ export default function ContactPage() {
         return
       }
 
-      // Here you would typically send the form data to your backend
-      // For now, we'll simulate a successful submission
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      showToast("Message sent successfully! We'll get back to you soon.", "success")
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        message: "",
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        showToast("Please enter a valid email address", "error")
+        setLoading(false)
+        return
+      }
+
+      await addDoc(collection(db, "contact_messages"), {
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        createdAt: Timestamp.now(),
+        status: "unread",
       })
+
+      showToast("Message sent successfully! We\u2019ll get back to you soon.", "success")
+      setFormData({ name: "", email: "", subject: "", message: "" })
     } catch (error) {
       console.error("Error sending message:", error)
       showToast("Failed to send message. Please try again.", "error")

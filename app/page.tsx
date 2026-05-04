@@ -1,16 +1,38 @@
 "use client"
 
-import { useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import ProductCard from "@/components/product-card"
 import NavBar from "@/components/nav-bar"
 import { Smartphone, Car, Shirt, HomeIcon, Sofa, Dumbbell, Gamepad2, BookOpen, Briefcase, Wrench, ArrowRight } from "lucide-react"
 import SoapDispenser from '@/components/icons/soap-dispenser-droplet.svg';
 import { useProducts } from "@/hooks/use-products"
+import { fetchPropertyList, PropertyListing } from "@/utils/dataFetch"
+import type { FirebaseProduct } from "@/lib/firebase/firestore"
 
 export default function Home() {
   const featuredRef = useRef<HTMLDivElement>(null)
   const { products, loading } = useProducts();
+  const [properties, setProperties] = useState<FirebaseProduct[]>([])
+
+  useEffect(() => {
+    fetchPropertyList().then((data: PropertyListing[]) => {
+      const mapped = data.map((p) => ({
+        id: p.id,
+        name: p.propertyTypes || p.title || "Property",
+        price: parseFloat(p.rentPrice || "0") || 0,
+        images: p.images || (p.image ? [p.image] : []),
+        imagesData: [],
+        description: p.details || p.description || "",
+        location: p.location || {},
+        category: "property",
+        propertyTypes: p.propertyTypes,
+        rentPrice: p.rentPrice,
+        bedbath: p.bedbath,
+      } as FirebaseProduct & { propertyTypes?: string; rentPrice?: string; bedbath?: string }))
+      setProperties(mapped)
+    }).catch(() => {})
+  }, [])
 
   // Handle scroll to featured products
   const scrollToFeatured = () => {
@@ -242,7 +264,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
-              {products.map((product) => (
+              {[...products, ...properties].map((product) => (
                 <ProductCard 
                   key={product.id} 
                   product={product}

@@ -115,7 +115,7 @@ export default function ServicePage() {
   const handleShare = () => {
     if (service) {
       const serviceUrl = `${window.location.origin}/service/${service.id}`
-      dispatch(openShareModal({ productId: service.id, productUrl: serviceUrl }))
+      dispatch(openShareModal({ productId: service.id, productUrl: serviceUrl, productTitle: (service as any).name || (service as any).title || "Service" }))
     }
   }
 

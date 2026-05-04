@@ -138,6 +138,7 @@ export const fetchProductsByCategory = async (category: string) => {
      lifestyles?: string[];
      images?: string[];
      image?: string;
+     videos?: string[];
      // Location
      location?: {
        region?: string;
@@ -266,6 +267,21 @@ export const fetchProductsByCategory = async (category: string) => {
     return jobs
   }
 
+  export const getUserProperties = async (userId: string, userEmail?: string) => {
+    const results = new Map<string, PropertyListing>()
+
+    // Query by vendor.uid (new listings)
+    const byUid = await getDocs(query(collection(db, "Roommate"), where("vendor.uid", "==", userId)))
+    byUid.docs.forEach((d) => results.set(d.id, { id: d.id, ...d.data() } as PropertyListing))
+
+    // Query by vendor.email (legacy listings that didn't store uid)
+    if (userEmail) {
+      const byEmail = await getDocs(query(collection(db, "Roommate"), where("vendor.email", "==", userEmail)))
+      byEmail.docs.forEach((d) => results.set(d.id, { id: d.id, ...d.data() } as PropertyListing))
+    }
+
+    return Array.from(results.values())
+  }
 
   export const getUserData = async (userId: string) => {
     const docRef = doc(db, "vendors", userId);
