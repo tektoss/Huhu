@@ -18,8 +18,9 @@ import LoadingSpinner from "@/components/loading-spinner"
 import { formatDistanceToNow } from 'date-fns';
 import { getPostedTimeFromFirestore } from "@/utils/getters"
 import { showToast } from "@/utils/showToast"
-import { doc, serverTimestamp, setDoc } from "firebase/firestore"
-import { getAuth, updateProfile } from "firebase/auth"
+import { deleteDoc, doc, serverTimestamp, setDoc } from "firebase/firestore"
+import { deleteUser, getAuth, reauthenticateWithCredential, EmailAuthProvider, updateProfile } from "firebase/auth"
+import { deleteCookie } from "cookies-next"
 
 export default function ProfilePage() {
   const auth = getAuth();
@@ -39,6 +40,9 @@ export default function ProfilePage() {
   const [imageData, setImageData] = useState<{url?:string, path?:string, name?:string, size?:number, type?:string} | null>({url:'', path:'', name: '', size: 0, type: ''});
   const [loading, setLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   // console.log("profile auth---->", user);
   const {id}:{id:string} = useParams();
 
@@ -281,6 +285,33 @@ export default function ProfilePage() {
       console.error("Error logging out:", error)
     }
   }
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setDeleteLoading(true);
+    try {
+      // Delete Firestore vendor document
+      await deleteDoc(doc(db, "vendors", user.uid));
+
+      // Delete the Firebase Auth account
+      await deleteUser(user);
+
+      // Clear session cookie and redirect
+      deleteCookie("__session");
+      showToast("Your account has been deleted.", "success");
+      router.replace("/");
+    } catch (error: any) {
+      if (error?.code === "auth/requires-recent-login") {
+        showToast("Please sign out and sign back in, then try again.", "error");
+      } else {
+        console.error("Error deleting account:", error);
+        showToast("Failed to delete account. Please try again.", "error");
+      }
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  }
   console.log("listings", listings);
 
   if (loading) {
@@ -352,12 +383,21 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Logout Button */}
+            {/* Logout & Delete Account Buttons */}
             {user?.uid === id && (
-              <div className="mb-6 text-right">
+              <div className="mb-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="flex items-center px-4 py-2 text-sm text-red-700 border border-red-300 rounded-md hover:bg-red-50"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Account
+                </button>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center px-4 py-2 ml-auto text-sm text-red-600 border border-red-200 rounded-md hover:bg-red-50"
+                  className="flex items-center px-4 py-2 text-sm text-red-600 border border-red-200 rounded-md hover:bg-red-50"
                 >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -527,6 +567,50 @@ export default function ProfilePage() {
 
           </div>
         </div>
+
+        {/* Delete Account Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-md p-6 bg-white rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-red-600">Delete Account</h2>
+                <button onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }} className="text-gray-500 hover:text-black" aria-label="Close modal">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="mb-3 text-sm text-gray-700">
+                This action is <strong>permanent</strong>. Your account and profile data will be deleted immediately. Your listings, jobs, and properties will remain visible until removed by an admin.
+              </p>
+              <p className="mb-4 text-sm text-gray-700">
+                Type <strong>DELETE</strong> below to confirm:
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE"
+                className="w-full px-3 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400"
+              />
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== "DELETE" || deleteLoading}
+                  className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleteLoading ? "Deleting..." : "Delete My Account"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Edit Profile Modal */}
         {showEditModal && (
